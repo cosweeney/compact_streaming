@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.stats import t, gamma
-#from scipy.special import gamma
 
 from scipy.interpolate import interp1d
 
