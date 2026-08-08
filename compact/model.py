@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.stats import t, gamma
-#from scipy.special import gamma
+from scipy.stats import t
+from scipy.special import gamma
 
 from scipy.interpolate import interp1d
 
@@ -29,6 +29,9 @@ def sigma_mod(x, sigma0, A_rho, sigma_rho):
 
 def delta_mod(x, A_delta, sigma_delta):
     return A_delta * x / (sigma_delta + x)
+
+def delta_piv(x, A, sigma, x_p=5):
+    return A * (x/x_p) * (1+sigma*x_p) / (1+sigma*x)    
 
 class SkewTMeanInterpolator:
     """
@@ -87,8 +90,9 @@ skew_interp = SkewTMeanInterpolator(nu=6)
 
 sig_pars = np.array([0.20281935253098268, 27.382880273166126]) # TODO: update to follow from config file or smthg later. defaults to hh BF vals for now. 
 del_pars = np.array([47.766923483904314, 0.29581892896320244])
+piv_pars = np.array([45.0971007,   3.37617464])
 
-def Pv_compact(v, r_p, r_los, mean_vr, pars=[*sig_pars, *del_pars], s_h=355):
+def Pv_compact(v, r_p, r_los, mean_vr, pars=[*sig_pars, *piv_pars], s_h=355, unit_conversion=None):
     """
     Evaluates P(v | r_p, r_los, M) modeled as a skewed t distribution using the compact model.
     """
@@ -102,7 +106,7 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars=[*sig_pars, *del_pars], s_h=355):
     
     # enforce symmetry about r_los
     sign_rlos = np.where(r_los != 0, np.sign(r_los), 1.0)
-    delta_val = delta_mod(x, *pars[2:]) * sign_rlos
+    delta_val = delta_mod(x, pars[2],  0.29581892896320244) * sign_rlos # Delta 'transition' parameter can only be constrained at small x, so fix it. 
     
     # interpolate skewed t params
     omega, alpha = skew_interp.get_skew_params(delta_val, sig_v)
@@ -111,7 +115,10 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars=[*sig_pars, *del_pars], s_h=355):
     
     # eval PDF
     nu = skew_interp.nu
-    
+
+    if unit_conversion:
+        pdf = unit_conversion*skewed_t_pdf(unit_conversion*v, xi, omega, alpha, nu)
+
     pdf = skewed_t_pdf(v, xi, omega, alpha, nu)
     
     return pdf
