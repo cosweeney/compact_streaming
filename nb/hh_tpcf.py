@@ -58,11 +58,11 @@ def generate_bins(
     return rbins, r_edges
 
 # define radial bins 
-r_cens, r_edges = generate_bins(0.01, 150, 70+1, logspaced=True) 
+r_cens, r_edges = generate_bins(0.01, 150, 70, logspaced=False) 
 
 # path to MDPL2 halos and for data
 halo_path = '/spiff/cosweeney/simulations/MDPL2/hlists/hlist_0.83760_update.hdf5'
-save_path = '/spiffball/cosweeney/simulations/MDPL2/data/CorrFuncs/xi_hh_150.hdf5'
+save_path = '/spiffball/cosweeney/simulations/MDPL2/data/CorrFuncs/xi_hh_150_linbin.hdf5'
 
 # sim quantities
 L_box = 1_000 # h^-1 Mpc

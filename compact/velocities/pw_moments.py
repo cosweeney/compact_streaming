@@ -4,6 +4,7 @@ Ported from https://github.com/florpi/PairVelocities.jl to cython.
 """
 
 import numpy as np
+from joblib import Parallel, delayed
 
 
 def _build_cell_list(pos, boxsize, rmax):
@@ -160,9 +161,12 @@ def pairwise_velocity_moments_jackknife(pos, vel, rbins, boxsize, n_jk_1d):
     n_bins = len(rbins) - 1
     jk_samples = {k: np.zeros((n_jk, n_bins)) for k in moment_keys}
  
-    for k in range(n_jk):
+    def _jk_sample(k):
         mask = jk_labels != k
-        result = pairwise_velocity_moments(pos[mask], vel[mask], rbins, boxsize)
+        return pairwise_velocity_moments(pos[mask], vel[mask], rbins, boxsize)
+
+    results = Parallel(n_jobs=-1)(delayed(_jk_sample)(k) for k in range(n_jk))
+    for k, result in enumerate(results):
         for key in moment_keys:
             jk_samples[key][k] = result[key]
  
