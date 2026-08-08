@@ -6,6 +6,7 @@ taken from https://github.com/florpi/GaussianStreamingModel. #TODO: just install
 import numpy as np
 
 from scipy.integrate import simpson
+from scipy.special import legendre
 
 from typing import Callable
 
@@ -85,3 +86,22 @@ def simps_integrate(
 
     twopcf_s = integral_left + integral_right - 1.0
     return twopcf_s
+
+def expand_multipole(mu_bins, xi_ell, ell=0):
+    """ Computes the 2D tpcf from multipoles.
+
+    Args:
+        mu_bins (array_like): mu bin centers.
+        xi_ell (np.ndarray): 1D array of tpcf multipole computed at desired s.
+        ell (int, optional): multipole order. Defaults to 0.
+
+    Returns:
+        xi_s_mu: np.ndarray 
+            The 2D tpcf xi_s_mu.
+    """
+
+    L_ell = legendre(ell)
+
+    xi_s_mu = np.sum(xi_ell[:, None] * L_ell(mu_bins), axis=1)
+
+    return xi_s_mu
