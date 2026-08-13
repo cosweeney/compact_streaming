@@ -279,7 +279,7 @@ def generate_sub_box_ids(
 
     for chunk in tqdm(range(n_iter), desc='Chunk', ncols=100, colour='blue'):
         low = chunk * chunksize
-        if chunk < n_iter - 2:
+        if chunk < n_iter - 1:
             upp = (chunk + 1) * chunksize
         else:
             upp = None
@@ -632,6 +632,9 @@ def get_pairwise_halo_pw_quants(
     path: str,
     mass_mask: np.ndarray, 
     pos_vel_labels: list = ['x', 'y', 'z', 'vx', 'vy', 'vz'],
+    id_label: str = 'hid', 
+    vmax_label: str = 'vmax',
+    Abacus: bool = False,
     n_jobs: int = -1,
 ) -> Tuple[np.ndarray]:
     """Locates for the largest `v_max` seeds and searches for all the halos
@@ -669,22 +672,25 @@ def get_pairwise_halo_pw_quants(
     
     # Load seed data
     with h5.File(file_seeds, 'r') as hdf:
-        vmax = hdf['Vmax'][()][mass_mask]
+        if Abacus:
+            hdf = hdf['halos'][:]
+
+        vmax = hdf[vmax_label][()][mass_mask]
         order = np.argsort(vmax)[::-1]
 
-        hid = hdf['ID'][()] #Orig_halo_ID
+        hid = hdf[id_label][()] 
         pos_seed = np.vstack(
             [
-                hdf['X'][()][mass_mask],
-                hdf['Y'][()][mass_mask],
-                hdf['Z'][()][mass_mask],
+                hdf[pos_vel_labels[0]][()][mass_mask],
+                hdf[pos_vel_labels[1]][()][mass_mask],
+                hdf[pos_vel_labels[2]][()][mass_mask],
             ]
         ).T
         vel_seed = np.vstack(
             [
-                hdf['VX'][()][mass_mask],
-                hdf['VY'][()][mass_mask],
-                hdf['VZ'][()][mass_mask],
+                hdf[pos_vel_labels[3]][()][mass_mask],
+                hdf[pos_vel_labels[4]][()][mass_mask],
+                hdf[pos_vel_labels[5]][()][mass_mask],
             ]
         ).T
 
