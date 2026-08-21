@@ -89,8 +89,16 @@ def get_pairwise_hist(
     r_max, boxsize, subsize, path,
     n_M, R_edges, rlos_edges, v_lo, v_hi, n_v,
     conv=1.0, n_jobs=-1, tmpdir=None, progress=True, tasks_per_sub_box=1,
+    rlos_max=None,
 ):
-    """seed_mbin : int array, mass-bin index per seed (use -1 to skip a seed)."""
+    """seed_mbin : int array, mass-bin index per seed (use -1 to skip a seed).
+
+    rlos_max : half-length of the search cylinder along the line of sight.
+        Defaults to r_max.  Set it to rlos_edges[-1] -- pairs beyond the grid
+        are binned and discarded, and the query cost goes as the volume of the
+        bounding sphere, sqrt(r_max^2 + rlos_max^2)^3.
+    """
+    rlos_max = float(r_max if rlos_max is None else rlos_max)
     keep = seed_mbin >= 0
     seed_pos = seed_pos[keep] % boxsize
     seed_vel = seed_vel[keep]
@@ -117,8 +125,8 @@ def get_pairwise_hist(
     progdir = os.path.join(tmpdir, 'prog')
     os.makedirs(progdir, exist_ok=True)
 
-    # bounding sphere of the cylinder (R <= r_max, |rlos| <= r_max)
-    r_query = r_max * np.sqrt(2.0)
+    # bounding sphere of the cylinder (R <= r_max, |rlos| <= rlos_max)
+    r_query = float(np.hypot(r_max, rlos_max))
 
     def _process_sub_box(sub_box_id, lo, hi):
         pos, vel, _, _, _ = load_halos(sub_box_id, boxsize, subsize, path)
@@ -143,12 +151,14 @@ def get_pairwise_hist(
             R = np.sqrt(rel_pos[:, 0]**2 + rel_pos[:, 1]**2)
             # R <= r_max implies |rel_x|, |rel_y| <= r_max, so only z is extra
             keep = ((R <= r_max) & (R > 0)        # R > 0 drops the self-pair
-                    & (np.abs(rel_pos[:, 2]) <= r_max))
+                    & (np.abs(rel_pos[:, 2]) <= rlos_max))
             if not keep.any():
                 continue
 
             rel_pos = rel_pos[keep]
-            rel_vel = vel[nb][keep] - sv[i]
+            # index velocities on the survivors only -- fancy indexing the full
+            # neighbour list is the single most expensive step in this loop
+            rel_vel = vel[nb[keep]] - sv[i]
             vr, _ = get_zw13_vr_vt(rel_pos, rel_vel)
 
             buf.add(sm[i], R[keep], rel_pos[:, 2], rel_vel[:, 2], vr)
