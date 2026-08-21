@@ -28,11 +28,38 @@ class CompactStreamingModel:
 
         return self._lpt
     
-    def _pdf(self, lpt, params):
+    def _compact_params(self, cosmo, mass_bin=None):
+        """
+        mass_bin : None (default, uses the simultaneous fit) | 'low_M' | 'high_M'
+                Passing 'low_M'/'high_M' evaluates that mass bin's individual
+                fit instead -- for systematic-error checks, not production use.
+        """
+        if self.z not in self.cfg.compact_emulator:
+            raise NotImplementedError(
+                f"No compact-model emulator calibrated at z={self.z}; "
+                f"available redshifts: {list(self.cfg.compact_emulator)}"
+            )
+        emu = self.cfg.compact_emulator[self.z]
+
+        h, ombh2, omch2, As = cosmo
+        cosmo_vals = np.array([ombh2, omch2, np.log(1e10 * As), emu['ns_fiducial']])
+        delta_vals = self.cfg.fiducial_cosmo - cosmo_vals   # Delta_theta = theta_fid - theta
+
+        fits = emu['fits'] if mass_bin is None else emu['fits_indiv'][mass_bin]
+
+        params = np.array(emu['mean_params'], dtype=float)
+        for row_idx, dependent_cols, beta in fits:
+            params[row_idx] = beta[0] + sum(beta[1 + n] * delta_vals[col]
+                                            for n, col in enumerate(dependent_cols))
+        return params
+
+    def _pdf(self, lpt, cosmo):
         mean = UnivariateSpline(self.cfg.r, lpt[1], s=0)
+        params = self._compact_params(cosmo)
 
-        return Pv_compact(self.cfg.vlos, self.cfg.r, self.cfg.r, mean, params, unit_conversion=1/lpt.conv)
-
+        return Pv_compact(self.cfg.vlos, self.cfg.r, self.cfg.r, mean, params,
+                        unit_conversion=1/lpt.conv, fix_sig_Del=False)
+    
     def _multipoles(self, ells=(0, 2)):
 
         xi_real = UnivariateSpline(self.cfg.r, self._lpt[1], s=0)
@@ -49,7 +76,7 @@ class CompactStreamingModel:
         multi = np.zeros((len(ells), len(self.cfg.r)))
 
         for ell in ells:
-            multi[ell//2] = tpcf_multipole(xi_s_mu, self.cf.mu_bins, order=ell)
+            multi[ell//2] = tpcf_multipole(xi_s_mu, self.cfg.mu_bins, order=ell)
 
         return multi
 

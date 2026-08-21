@@ -31,7 +31,14 @@ def delta_mod(x, A_delta, sigma_delta):
     return A_delta * x / (sigma_delta + x)
 
 def delta_piv(x, A, sigma, x_p=5):
-    return A * (x/x_p) * (1+sigma*x_p) / (1+sigma*x)    
+    return A * (x/x_p) * (1+sigma*x_p) / (1+sigma*x)  
+
+def A_rho_mod(R, A_piv, b, R_piv):
+    return A_piv * np.exp(-(R - R_piv) / b)
+
+def sigma_mod_R(coords, sigma0, A_piv, b, sigma_rho, R_piv):
+    x, R = coords
+    return sigma_mod(x, sigma0, A_rho_mod(R, A_piv, b, R_piv), sigma_rho)  
 
 class SkewTMeanInterpolator:
     """
@@ -89,10 +96,11 @@ class SkewTMeanInterpolator:
 skew_interp = SkewTMeanInterpolator(nu=6)
 
 sig_pars = np.array([0.20281935253098268, 27.382880273166126]) # TODO: update to follow from config file or smthg later. defaults to hh BF vals for now. 
+sig_R_pars = np.array([0.280, 105, 30]) # accounting for R (r_p) dependence, from AbacusSummit @ z=0.5.
 del_pars = np.array([47.766923483904314, 0.29581892896320244])
 piv_pars = np.array([45.0971007,   3.37617464])
 
-def Pv_compact(v, r_p, r_los, mean_vr, pars=[*sig_pars, *piv_pars], s_h=355, unit_conversion=None):
+def Pv_compact(v, r_p, r_los, mean_vr, pars=[355, *sig_R_pars, *del_pars], unit_conversion=None, fix_sig_Del=True):
     """
     Evaluates P(v | r_p, r_los, M) modeled as a skewed t distribution using the compact model.
     """
@@ -102,11 +110,17 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars=[*sig_pars, *piv_pars], s_h=355, uni
     
     # inputs 
     mu = mean_vr(r) * r_los/r  
-    sig_v = sigma_mod(x, s_h, *pars[:2])
+    sig_v = sigma_mod(x, pars[0], *pars[1:3])
     
     # enforce symmetry about r_los
     sign_rlos = np.where(r_los != 0, np.sign(r_los), 1.0)
-    delta_val = delta_mod(x, pars[2],  0.29581892896320244) * sign_rlos # Delta 'transition' parameter can only be constrained at small x, so fix it. 
+
+    sig_del = 0.29581892896320244 # Delta 'transition' parameter can only be constrained at small x, so fix it if desired.
+
+    if not sig_del:
+       sig_del = pars[4]
+
+    delta_val = delta_mod(x, pars[3],  sig_del[4]) * sign_rlos 
     
     # interpolate skewed t params
     omega, alpha = skew_interp.get_skew_params(delta_val, sig_v)

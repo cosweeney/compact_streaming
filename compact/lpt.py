@@ -9,7 +9,7 @@ from velocileptors.LPT.gaussian_streaming_model_fftw import GaussianStreamingMod
 
 class GetLPTInputs:
 
-    cosmo_fid = [0.6777, 0.02214, 0.11891, 2.2e-9]
+    cosmo_fid = [0.6777, 0.02214, 0.11891, 2.2e-9] 
 
     def __init__(self, redshift=1/0.8376-1, cosmo=cosmo_fid, pars=[1, 0, 0, 0, 0, 0, 0, 0, 0]):
         h, ombh2, omch2, As = cosmo
