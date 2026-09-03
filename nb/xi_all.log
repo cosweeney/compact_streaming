@@ -1,0 +1,115 @@
+FAILED LRG z0.4-0.6 mock11: FITSIO status = 104: could not open the named file
+failed to find or open the following file: (ffopen)
+/spiffball/cosweeney/mocks/AbacusSummit/dark/altmtl11/LRG_NGC_1_clustering.ran.f
+its
+
+FAILED LRG z0.6-0.8 mock11: FITSIO status = 104: could not open the named file
+failed to find or open the following file: (ffopen)
+/spiffball/cosweeney/mocks/AbacusSummit/dark/altmtl11/LRG_NGC_1_clustering.ran.f
+its
+
+FAILED LRG z0.8-1.1 mock11: FITSIO status = 104: could not open the named file
+failed to find or open the following file: (ffopen)
+/spiffball/cosweeney/mocks/AbacusSummit/dark/altmtl11/LRG_NGC_1_clustering.ran.f
+its
+
+[76/175] BGS_BRIGHT-21.5 z0.1-0.4 mock0  14.7 min | elapsed 0.2 h | ETA 24.3 h
+[77/175] BGS_BRIGHT-21.5 z0.1-0.4 mock1  9.0 min | elapsed 0.4 h | ETA 15.8 h
+[78/175] BGS_BRIGHT-21.5 z0.1-0.4 mock2  10.5 min | elapsed 0.6 h | ETA 17.3 h
+[79/175] BGS_BRIGHT-21.5 z0.1-0.4 mock3  15.3 min | elapsed 0.8 h | ETA 23.4 h
+[80/175] BGS_BRIGHT-21.5 z0.1-0.4 mock4  15.0 min | elapsed 1.1 h | ETA 23.0 h
+[81/175] BGS_BRIGHT-21.5 z0.1-0.4 mock5  15.2 min | elapsed 1.3 h | ETA 23.2 h
+[82/175] BGS_BRIGHT-21.5 z0.1-0.4 mock6  15.1 min | elapsed 1.6 h | ETA 22.9 h
+[83/175] BGS_BRIGHT-21.5 z0.1-0.4 mock7  12.9 min | elapsed 1.8 h | ETA 19.9 h
+[84/175] BGS_BRIGHT-21.5 z0.1-0.4 mock8  9.4 min | elapsed 2.0 h | ETA 15.2 h
+[85/175] BGS_BRIGHT-21.5 z0.1-0.4 mock9  15.2 min | elapsed 2.2 h | ETA 22.3 h
+[86/175] BGS_BRIGHT-21.5 z0.1-0.4 mock10  9.0 min | elapsed 2.4 h | ETA 14.2 h
+[87/175] BGS_BRIGHT-21.5 z0.1-0.4 mock11  13.7 min | elapsed 2.6 h | ETA 19.9 h
+[88/175] BGS_BRIGHT-21.5 z0.1-0.4 mock12  15.1 min | elapsed 2.8 h | ETA 21.5 h
+[89/175] BGS_BRIGHT-21.5 z0.1-0.4 mock13  9.0 min | elapsed 3.0 h | ETA 13.6 h
+[90/175] BGS_BRIGHT-21.5 z0.1-0.4 mock14  14.4 min | elapsed 3.2 h | ETA 20.1 h
+[91/175] BGS_BRIGHT-21.5 z0.1-0.4 mock15  15.1 min | elapsed 3.5 h | ETA 20.8 h
+[92/175] BGS_BRIGHT-21.5 z0.1-0.4 mock16  14.9 min | elapsed 3.7 h | ETA 20.3 h
+[93/175] BGS_BRIGHT-21.5 z0.1-0.4 mock17  8.9 min | elapsed 3.9 h | ETA 12.6 h
+[94/175] BGS_BRIGHT-21.5 z0.1-0.4 mock18  13.0 min | elapsed 4.1 h | ETA 17.5 h
+[95/175] BGS_BRIGHT-21.5 z0.1-0.4 mock19  15.0 min | elapsed 4.3 h | ETA 19.9 h
+[96/175] BGS_BRIGHT-21.5 z0.1-0.4 mock20  13.2 min | elapsed 4.6 h | ETA 17.4 h
+[97/175] BGS_BRIGHT-21.5 z0.1-0.4 mock21  8.8 min | elapsed 4.7 h | ETA 11.6 h
+[98/175] BGS_BRIGHT-21.5 z0.1-0.4 mock22  14.9 min | elapsed 5.0 h | ETA 19.0 h
+[99/175] BGS_BRIGHT-21.5 z0.1-0.4 mock23  15.1 min | elapsed 5.2 h | ETA 19.1 h
+[100/175] BGS_BRIGHT-21.5 z0.1-0.4 mock24  15.0 min | elapsed 5.5 h | ETA 18.8 h
+[101/175] ELG_LOPnotqso z0.8-1.1 mock0  11.2 min | elapsed 5.6 h | ETA 13.8 h
+[102/175] ELG_LOPnotqso z0.8-1.1 mock1  18.2 min | elapsed 5.9 h | ETA 19.4 h
+[103/175] ELG_LOPnotqso z0.8-1.1 mock2  18.6 min | elapsed 6.3 h | ETA 20.3 h
+[104/175] ELG_LOPnotqso z0.8-1.1 mock3  17.9 min | elapsed 6.6 h | ETA 20.1 h
+[105/175] ELG_LOPnotqso z0.8-1.1 mock4  10.8 min | elapsed 6.7 h | ETA 16.0 h
+[106/175] ELG_LOPnotqso z0.8-1.1 mock5  18.1 min | elapsed 7.0 h | ETA 19.1 h
+[107/175] ELG_LOPnotqso z0.8-1.1 mock6  13.9 min | elapsed 7.3 h | ETA 16.9 h
+[108/175] ELG_LOPnotqso z0.8-1.1 mock7  14.5 min | elapsed 7.5 h | ETA 16.8 h
+[109/175] ELG_LOPnotqso z0.8-1.1 mock8  18.6 min | elapsed 7.8 h | ETA 18.5 h
+[110/175] ELG_LOPnotqso z0.8-1.1 mock9  14.7 min | elapsed 8.1 h | ETA 16.6 h
+[111/175] ELG_LOPnotqso z0.8-1.1 mock10  14.0 min | elapsed 8.3 h | ETA 15.9 h
+[112/175] ELG_LOPnotqso z0.8-1.1 mock11  18.3 min | elapsed 8.6 h | ETA 17.6 h
+[113/175] ELG_LOPnotqso z0.8-1.1 mock12  18.1 min | elapsed 8.9 h | ETA 17.4 h
+[114/175] ELG_LOPnotqso z0.8-1.1 mock13  13.5 min | elapsed 9.1 h | ETA 15.1 h
+[115/175] ELG_LOPnotqso z0.8-1.1 mock14  13.4 min | elapsed 9.4 h | ETA 14.7 h
+[116/175] ELG_LOPnotqso z0.8-1.1 mock15  18.3 min | elapsed 9.7 h | ETA 16.6 h
+[117/175] ELG_LOPnotqso z0.8-1.1 mock16  16.2 min | elapsed 9.9 h | ETA 15.4 h
+[118/175] ELG_LOPnotqso z0.8-1.1 mock17  10.8 min | elapsed 10.1 h | ETA 12.8 h
+[119/175] ELG_LOPnotqso z0.8-1.1 mock18  18.2 min | elapsed 10.4 h | ETA 15.7 h
+[120/175] ELG_LOPnotqso z0.8-1.1 mock19  18.0 min | elapsed 10.7 h | ETA 15.4 h
+[121/175] ELG_LOPnotqso z0.8-1.1 mock20  15.9 min | elapsed 11.0 h | ETA 14.2 h
+[122/175] ELG_LOPnotqso z0.8-1.1 mock21  11.6 min | elapsed 11.2 h | ETA 12.1 h
+[123/175] ELG_LOPnotqso z0.8-1.1 mock22  18.0 min | elapsed 11.5 h | ETA 14.6 h
+[124/175] ELG_LOPnotqso z0.8-1.1 mock23  18.3 min | elapsed 11.8 h | ETA 14.5 h
+[125/175] ELG_LOPnotqso z0.8-1.1 mock24  18.0 min | elapsed 12.1 h | ETA 14.1 h
+[126/175] ELG_LOPnotqso z1.1-1.6 mock0  14.8 min | elapsed 12.3 h | ETA 12.5 h
+[127/175] ELG_LOPnotqso z1.1-1.6 mock1  16.4 min | elapsed 12.6 h | ETA 12.9 h
+[128/175] ELG_LOPnotqso z1.1-1.6 mock2  19.1 min | elapsed 12.9 h | ETA 13.8 h
+[129/175] ELG_LOPnotqso z1.1-1.6 mock3  11.9 min | elapsed 13.1 h | ETA 10.5 h
+[130/175] ELG_LOPnotqso z1.1-1.6 mock4  19.3 min | elapsed 13.4 h | ETA 13.4 h
+[131/175] ELG_LOPnotqso z1.1-1.6 mock5  19.3 min | elapsed 13.8 h | ETA 13.1 h
+[132/175] ELG_LOPnotqso z1.1-1.6 mock6  12.5 min | elapsed 14.0 h | ETA 10.0 h
+[133/175] ELG_LOPnotqso z1.1-1.6 mock7  19.3 min | elapsed 14.3 h | ETA 12.6 h
+[134/175] ELG_LOPnotqso z1.1-1.6 mock8  19.5 min | elapsed 14.6 h | ETA 12.4 h
+[135/175] ELG_LOPnotqso z1.1-1.6 mock9  15.4 min | elapsed 14.9 h | ETA 10.4 h
+[136/175] ELG_LOPnotqso z1.1-1.6 mock10  15.1 min | elapsed 15.1 h | ETA 10.0 h
+[137/175] ELG_LOPnotqso z1.1-1.6 mock11  19.4 min | elapsed 15.4 h | ETA 11.6 h
+[138/175] ELG_LOPnotqso z1.1-1.6 mock12  11.9 min | elapsed 15.6 h | ETA 8.2 h
+[139/175] ELG_LOPnotqso z1.1-1.6 mock13  19.1 min | elapsed 16.0 h | ETA 10.9 h
+[140/175] ELG_LOPnotqso z1.1-1.6 mock14  19.4 min | elapsed 16.3 h | ETA 10.8 h
+[141/175] ELG_LOPnotqso z1.1-1.6 mock15  13.6 min | elapsed 16.5 h | ETA 8.1 h
+[142/175] ELG_LOPnotqso z1.1-1.6 mock16  16.1 min | elapsed 16.8 h | ETA 8.8 h
+[143/175] ELG_LOPnotqso z1.1-1.6 mock17  19.4 min | elapsed 17.1 h | ETA 10.0 h
+[144/175] ELG_LOPnotqso z1.1-1.6 mock18  19.4 min | elapsed 17.4 h | ETA 9.7 h
+[145/175] ELG_LOPnotqso z1.1-1.6 mock19  16.9 min | elapsed 17.7 h | ETA 8.4 h
+[146/175] ELG_LOPnotqso z1.1-1.6 mock20  12.3 min | elapsed 17.9 h | ETA 6.2 h
+[147/175] ELG_LOPnotqso z1.1-1.6 mock21  19.4 min | elapsed 18.2 h | ETA 8.9 h
+[148/175] ELG_LOPnotqso z1.1-1.6 mock22  19.2 min | elapsed 18.6 h | ETA 8.6 h
+[149/175] ELG_LOPnotqso z1.1-1.6 mock23  13.6 min | elapsed 18.8 h | ETA 5.9 h
+[150/175] ELG_LOPnotqso z1.1-1.6 mock24  15.3 min | elapsed 19.0 h | ETA 6.4 h
+[151/175] QSO z0.8-2.1 mock0  8.3 min | elapsed 19.2 h | ETA 3.3 h
+[152/175] QSO z0.8-2.1 mock1  8.5 min | elapsed 19.3 h | ETA 3.2 h
+[153/175] QSO z0.8-2.1 mock2  8.6 min | elapsed 19.5 h | ETA 3.1 h
+[154/175] QSO z0.8-2.1 mock3  8.8 min | elapsed 19.6 h | ETA 3.0 h
+[155/175] QSO z0.8-2.1 mock4  8.7 min | elapsed 19.8 h | ETA 2.9 h
+[156/175] QSO z0.8-2.1 mock5  6.8 min | elapsed 19.9 h | ETA 2.6 h
+[157/175] QSO z0.8-2.1 mock6  4.8 min | elapsed 19.9 h | ETA 2.3 h
+[158/175] QSO z0.8-2.1 mock7  4.8 min | elapsed 20.0 h | ETA 2.1 h
+[159/175] QSO z0.8-2.1 mock8  8.3 min | elapsed 20.2 h | ETA 2.0 h
+[160/175] QSO z0.8-2.1 mock9  8.7 min | elapsed 20.3 h | ETA 1.9 h
+[161/175] QSO z0.8-2.1 mock10  8.4 min | elapsed 20.4 h | ETA 1.8 h
+[162/175] QSO z0.8-2.1 mock11  8.8 min | elapsed 20.6 h | ETA 1.7 h
+[163/175] QSO z0.8-2.1 mock12  9.1 min | elapsed 20.7 h | ETA 1.6 h
+[164/175] QSO z0.8-2.1 mock13  8.8 min | elapsed 20.9 h | ETA 1.5 h
+[165/175] QSO z0.8-2.1 mock14  9.2 min | elapsed 21.0 h | ETA 1.3 h
+[166/175] QSO z0.8-2.1 mock15  6.4 min | elapsed 21.2 h | ETA 1.2 h
+[167/175] QSO z0.8-2.1 mock16  4.8 min | elapsed 21.2 h | ETA 1.0 h
+[168/175] QSO z0.8-2.1 mock17  4.8 min | elapsed 21.3 h | ETA 0.9 h
+[169/175] QSO z0.8-2.1 mock18  7.4 min | elapsed 21.4 h | ETA 0.8 h
+[170/175] QSO z0.8-2.1 mock19  8.3 min | elapsed 21.6 h | ETA 0.6 h
+[171/175] QSO z0.8-2.1 mock20  8.3 min | elapsed 21.7 h | ETA 0.5 h
+[172/175] QSO z0.8-2.1 mock21  8.7 min | elapsed 21.9 h | ETA 0.4 h
+[173/175] QSO z0.8-2.1 mock22  8.4 min | elapsed 22.0 h | ETA 0.3 h
+[174/175] QSO z0.8-2.1 mock23  6.8 min | elapsed 22.1 h | ETA 0.1 h
+[175/175] QSO z0.8-2.1 mock24  4.8 min | elapsed 22.2 h | ETA 0.0 h
