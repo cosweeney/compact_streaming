@@ -36,7 +36,7 @@ def delta_piv(x, A, sigma, x_p=5):
 def A_rho_mod(R, A_piv, b, R_piv):
     return A_piv * np.exp(-(R - R_piv) / b)
 
-def sigma_mod_R(coords, sigma0, A_piv, b, sigma_rho, R_piv):
+def sigma_mod_R(coords, sigma0, A_piv, b, sigma_rho, R_piv=72.5):
     x, R = coords
     return sigma_mod(x, sigma0, A_rho_mod(R, A_piv, b, R_piv), sigma_rho)  
 
@@ -100,40 +100,22 @@ sig_R_pars = np.array([0.280, 105, 30]) # accounting for R (r_p) dependence, fro
 del_pars = np.array([47.766923483904314, 0.29581892896320244])
 piv_pars = np.array([45.0971007,   3.37617464])
 
-def Pv_compact(v, r_p, r_los, mean_vr, pars=[355, *sig_R_pars, *del_pars], unit_conversion=None, fix_sig_Del=True):
-    """
-    Evaluates P(v | r_p, r_los, M) modeled as a skewed t distribution using the compact model.
-    """
-    # geometery
+def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None, fix_sig_Del=True):
     r = np.sqrt(r_p**2 + r_los**2)
     x = r - r_p
-    
-    # inputs 
-    mu = mean_vr(r) * r_los/r  
-    sig_v = sigma_mod(x, pars[0], *pars[1:3])
-    
-    # enforce symmetry about r_los
+
+    mu = mean_vr(r) * r_los / r
+    sig_v = sigma_mod_R((x, r_p), pars[0], pars[1], pars[2], pars[3])   # sigma0, A_rho0, sigma_rho (A_rho_p unused — see open question)
+
     sign_rlos = np.where(r_los != 0, np.sign(r_los), 1.0)
 
-    sig_del = 0.29581892896320244 # Delta 'transition' parameter can only be constrained at small x, so fix it if desired.
+    sig_del = 0.29581892896320244 if fix_sig_Del else pars[5]
+    delta_val = delta_mod(x, pars[4], sig_del) * sign_rlos
 
-    if not sig_del:
-       sig_del = pars[4]
-
-    delta_val = delta_mod(x, pars[3],  sig_del[4]) * sign_rlos 
-    
-    # interpolate skewed t params
     omega, alpha = skew_interp.get_skew_params(delta_val, sig_v)
-    
     xi = mu + delta_val
-    
-    # eval PDF
     nu = skew_interp.nu
 
     if unit_conversion:
-        pdf = unit_conversion*skewed_t_pdf(unit_conversion*v, xi, omega, alpha, nu)
-
-    pdf = skewed_t_pdf(v, xi, omega, alpha, nu)
-    
-    return pdf
-
+        return unit_conversion * skewed_t_pdf(unit_conversion * v, xi, omega, alpha, nu)
+    return skewed_t_pdf(v, xi, omega, alpha, nu)
