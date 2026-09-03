@@ -51,7 +51,7 @@ class GetLPTInputs:
             minkh=kmin, maxkh=kmax, npoints=nk)
         
         self.klin, self.Plin = k, pk[0]
-        self.gsm = GaussianStreamingModel(self.klin, self.Plin)
+        self.gsm = GaussianStreamingModel(self.klin, self.Plin, kmax=10.0) # set kmax higher than default here; potential issues with extrapolation
         self.gsm.convert_sigma_bases()
     
 
@@ -70,8 +70,10 @@ class GetLPTInputs:
 
         xi_int = np.interp(r, self.gsm.rint, self.gsm.xieft)
         v_int  = np.interp(r, self.gsm.rint, self.gsm.veft)
+
+        # print(1+xi_int)
         
-        return self.conv*self.f*v_int/(1+xi_int)
+        return self.conv*self.f*v_int/(1+xi_int) #np.maximum(1+xi_int, 0.1)
     
 
     def pwv_variance(self, r, mu, pars):
