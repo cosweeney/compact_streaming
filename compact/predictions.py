@@ -37,8 +37,8 @@ class CompactStreamingModel:
         if emu is None:
             raise NotImplementedError(f"z={z_node} node not yet populated in compact_emulator")
 
-        h, ombh2, omch2, As = cosmo
-        cosmo_vals = np.array([ombh2, omch2, np.log(1e10 * As), emu['ns_fiducial']])
+        h, ombh2, omch2, As, ns = cosmo
+        cosmo_vals = np.array([ombh2, omch2, np.log(1e10 * As), ns])
         delta_vals = self.cfg.fiducial_cosmo - cosmo_vals
 
         fits = emu['fits'] if mass_bin is None else emu['fits_indiv'][mass_bin]
@@ -49,12 +49,14 @@ class CompactStreamingModel:
                                             for n, col in enumerate(dependent_cols))
         return params
 
-    def _compact_params(self, cosmo, mass_bin=None, extrapolate='linear'):
+    def _compact_params(self, cosmo, mass_bin=None, interp_scheme='spline_z'):
         """
-        extrapolate : 'linear' (default) -- linear extrapolation using the slope
-                    at the nearest boundary node, safer than a cubic's curvature
-                    running away outside the fitted range.
-                    'spline' -- let the cubic spline extrapolate naturally.
+        interp_scheme : 'spline_z' (default) -- cubic spline in z, linearly
+                        extrapolated beyond the calibrated range using the
+                        slope at the nearest boundary node.
+                        'linear_lna' -- piecewise-linear interpolation in
+                        ln(a), extrapolated linearly from the nearest
+                        boundary segment's slope.
         """
         z_nodes = sorted(z for z, v in self.cfg.compact_emulator.items() if v is not None)
 
@@ -65,28 +67,41 @@ class CompactStreamingModel:
             raise NotImplementedError("No calibrated redshift nodes available")
 
         node_params = np.array([self._compact_params_at_node(zn, cosmo, mass_bin) for zn in z_nodes])
-        spline = CubicSpline(z_nodes, node_params, axis=0, extrapolate=(extrapolate == 'spline'))
 
         out_of_range = self.z < z_nodes[0] or self.z > z_nodes[-1]
         if out_of_range:
             warnings.warn(
                 f"z={self.z} is outside the calibrated range [{z_nodes[0]}, {z_nodes[-1]}]; "
-                f"extrapolating ('{extrapolate}' mode) -- treat results with caution.",
+                f"extrapolating linearly ('{interp_scheme}') -- treat results with caution.",
                 stacklevel=2,
             )
 
-        if extrapolate == 'spline' or not out_of_range:
-            return spline(self.z)
+        if interp_scheme == 'spline_z':
+            spline = CubicSpline(z_nodes, node_params, axis=0, extrapolate=False)
+            if not out_of_range:
+                return spline(self.z)
+            edge_z = z_nodes[0] if self.z < z_nodes[0] else z_nodes[-1]
+            edge_params = spline(edge_z)
+            edge_slope = spline(edge_z, 1)   # first derivative at the boundary
+            return edge_params + edge_slope * (self.z - edge_z)
 
-        # linear extrapolation from the nearest boundary node's local slope
-        edge_z = z_nodes[0] if self.z < z_nodes[0] else z_nodes[-1]
-        edge_params = spline(edge_z)
-        edge_slope = spline(edge_z, 1)   # first derivative at the boundary
-        return edge_params + edge_slope * (self.z - edge_z)
+        elif interp_scheme == 'linear_lna':
+            x_nodes = np.log(1.0 / (1.0 + np.asarray(z_nodes, dtype=float)))
+            order = np.argsort(x_nodes)
+            x_sorted = x_nodes[order]
+            params_sorted = node_params[order]
 
-    def _pdf(self, lpt, cosmo):
+            x_query = np.log(1.0 / (1.0 + self.z))
+            i = np.clip(np.searchsorted(x_sorted, x_query) - 1, 0, len(x_sorted) - 2)
+            slope = (params_sorted[i + 1] - params_sorted[i]) / (x_sorted[i + 1] - x_sorted[i])
+            return params_sorted[i] + slope * (x_query - x_sorted[i])
+
+        else:
+            raise ValueError(f"Unknown interp_scheme: {interp_scheme!r}")
+
+    def _pdf(self, lpt, cosmo, interp_scheme='spline_z'):
         mean = UnivariateSpline(self.cfg.r_lpt, lpt[1], s=0)
-        params = self._compact_params(cosmo)
+        params = self._compact_params(cosmo, interp_scheme=interp_scheme)
         conv = lpt[-1]
 
         return lambda v, rp, rl: Pv_compact(v, rp, rl, mean, params,
@@ -112,14 +127,14 @@ class CompactStreamingModel:
 
         return multi
 
-    def predict(self, theta, ells=(0, 2)):
+    def predict(self, theta, ells=(0, 2), interp_scheme='spline_z'):
         """
-        theta : array-like, [b1, b2, omega_b, omega_cdm, h, As]
+        theta : array-like, [b1, b2, omega_b, omega_cdm, h, As, ns]
         """
-        b1, b2, ombh2, omch2, h, As = theta
+        b1, b2, ombh2, omch2, h, As, ns = theta
         bias  = np.array([b1, b2])
-        cosmo = (h, ombh2, omch2, As)
+        cosmo = (h, ombh2, omch2, As, ns)
 
         lpt = self._lpt_inputs(cosmo, bias)
-        pdf = self._pdf(lpt, cosmo)
+        pdf = self._pdf(lpt, cosmo, interp_scheme=interp_scheme)
         return self._multipoles(pdf, ells=ells)

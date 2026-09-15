@@ -9,10 +9,10 @@ from velocileptors.LPT.gaussian_streaming_model_fftw import GaussianStreamingMod
 
 class GetLPTInputs:
 
-    cosmo_fid = [0.6777, 0.02214, 0.11891, 2.2e-9] 
+    cosmo_fid = [0.6777, 0.02214, 0.11891, 2.2e-9, 0.9649] 
 
     def __init__(self, redshift=1/0.8376-1, cosmo=cosmo_fid, pars=[1, 0, 0, 0, 0, 0, 0, 0, 0]):
-        h, ombh2, omch2, As = cosmo
+        h, ombh2, omch2, As, ns = cosmo
 
         self.h = h
         self.redshift = redshift
@@ -24,7 +24,7 @@ class GetLPTInputs:
                                     ombh2=ombh2, 
                                     omch2=omch2, 
                                     As=As, 
-                                    ns=0.9649,  # fix to planck '19                                  
+                                    ns=ns,                                   
                                     )
 
         camb_pars.NonLinear = camb.model.NonLinear_none
@@ -54,28 +54,24 @@ class GetLPTInputs:
         self.gsm = GaussianStreamingModel(self.klin, self.Plin, kmax=10.0) # set kmax higher than default here; potential issues with extrapolation
         self.gsm.convert_sigma_bases()
     
+    def _ensure_cumulants(self, pars):
+        pars = np.asarray(pars)
+        if not np.array_equal(getattr(self.gsm, '_last_cumulant_pars', None), pars):
+            self.gsm.compute_cumulants(*pars)
+            self.gsm._last_cumulant_pars = pars.copy()
 
-    def xi_real(self, rad, pars): 
-        if self.gsm is None:
-            self.get_pklin_gsm()
-        self.gsm.compute_cumulants(*pars)
-        xir = self.gsm.compute_xi_real(rad,*pars)
-        return xir
-
+    def xi_real(self, rad, pars):
+        if self.gsm is None: self.get_pklin_gsm()
+        self._ensure_cumulants(pars)
+        return self.gsm.compute_xi_real(rad, *pars)
 
     def pwv_mean(self, r, pars):
-        if self.gsm is None:
-            self.get_pklin_gsm()
-        self.gsm.compute_cumulants(*pars)
-
+        if self.gsm is None: self.get_pklin_gsm()
+        self._ensure_cumulants(pars)
         xi_int = np.interp(r, self.gsm.rint, self.gsm.xieft)
         v_int  = np.interp(r, self.gsm.rint, self.gsm.veft)
-
-        # print(1+xi_int)
-        
-        return self.conv*self.f*v_int/(1+xi_int) #np.maximum(1+xi_int, 0.1)
+        return self.conv*self.f*v_int/(1+xi_int)
     
-
     def pwv_variance(self, r, mu, pars):
         self.gsm.compute_cumulants(*pars)
         
@@ -89,13 +85,13 @@ class GetLPTInputs:
 
     def get_AP(self,):
 
-        h_fid, ombh2_fid, omch2_fid, As_fid = self.cosmo_fid
+        h_fid, ombh2_fid, omch2_fid, As_fid, ns_fid = self.cosmo_fid
 
         pars_fid = camb.set_params(H0=100.0 * h_fid, 
                                     ombh2=ombh2_fid, 
                                     omch2=omch2_fid, 
                                     As=As_fid, 
-                                    ns=0.9649,  # fix to planck '19                                  
+                                    ns=ns_fid,  # fix to planck '19                                  
                                     )
 
         pars_fid.NonLinear = camb.model.NonLinear_none

@@ -1,7 +1,7 @@
 import numpy as np
 
 # ------------------------------------------------------------------ bins
-r = np.arange(16.0, 168.0 + 4.0, 1.0)      # h^-1 Mpc; 16, 17, ..., 168 (38 bins)
+r = np.arange(16.0, 169.0 + 4.0, 1.0)      # h^-1 Mpc; 16, 17, ..., 168 (38 bins)
 r_lpt = np.arange(1.0, r.max()*1.25, 1.0)      # for xi_real 
 #np.arange(20.0, 132.0 + 4.0, 4.0)      # h^-1 Mpc; 20, 24, ..., 132 (29 bins)
 mu_edges = np.linspace(0, 1, 120 + 1)
