@@ -1,3 +1,6 @@
 *.egg-info
 data
 nb/calibration/diagnostic_plots
+nb/calibration/runs/figures
+nb/drafts/figures
+nb/drafts/from_chw
