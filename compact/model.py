@@ -1,9 +1,10 @@
 """
 Compact pairwise velocity PDF model.
 
-9-parameter model:
+11-parameter model:
   sigma_v family (4):  sigma0, A_rho0, A_rho_p, sigma_rho
   Delta family   (5):  A_delta0, r_delta, sigma_delta, beta_delta, alpha
+  nu(r) family   (2):  nu_0, r_c
 
 Parameter ordering (pars vector index):
   0  sigma0       -- asymptotic pairwise velocity dispersion [km/s]
@@ -15,17 +16,19 @@ Parameter ordering (pars vector index):
   6  sigma_delta  -- turnover scale in x for the Delta shape [h^-1 Mpc]
   7  beta_delta   -- power-law steepness of the Delta turnover
   8  alpha        -- small-x power-law index of Delta
+  9  nu_0         -- saturation value of the tail shape nu(r) at large r
+ 10  r_c          -- turnover scale of nu(r) [h^-1 Mpc]
 
-This replaces the earlier 6-parameter model (flat-core Delta with only
-A_delta, sigma_delta, and a fixed/toggled sigma_delta). The functional
-forms here match cosmo_grid_vel_fit_out.py's fitting functions exactly,
-so a 9-vector fitted there means the same thing at predict time.
+The tail shape is nu(r) = 2 + (nu_0 - 2) / (1 + (r_c/r)^2), floored at 2.05.
+The skew-t scale omega and skewness alpha are not free: they are set in closed
+form so the PDF has mean mu, standard deviation sigma_v and location
+xi = mu + Delta (see skewt_params_from_delta). This replaces the fixed-nu = 6
+lookup table (SkewTMeanInterpolator).
 """
 
 import numpy as np
 from scipy.stats import t
-from scipy.special import gamma
-from scipy.interpolate import interp1d
+from scipy.special import gammaln
 
 
 # ------------------------------------------------------------------ PDF
@@ -70,50 +73,24 @@ def delta_mod_alpha(x, A, sigma_delta, beta_delta, alpha):
     return A * x**alpha / (1.0 + (x / sigma_delta)**beta_delta)
 
 
-# ------------------------------------------------------------------ skew-t mapping
-class SkewTMeanInterpolator:
-    """Pre-computes the relationship between (Delta_mean / sigma_v) and
-    (omega, alpha) for a skewed t-distribution using the algebraic mean."""
-
-    def __init__(self, nu=6, alpha_bounds=(-15, 15), pts=1000):
-        self.nu = nu
-        alphas = np.linspace(alpha_bounds[0], alpha_bounds[1], pts)
-        delta = alphas / np.sqrt(1 + alphas**2)
-
-        gamma_factor = gamma((nu - 1) / 2) / gamma(nu / 2)
-        mu_z = delta * np.sqrt(nu / np.pi) * gamma_factor
-
-        var_z = (nu / (nu - 2)) - mu_z**2
-        sig_z = np.sqrt(var_z)
-
-        R_vals = -mu_z / sig_z
-
-        if R_vals[-1] < R_vals[0]:
-            valid_R = R_vals[::-1]
-            valid_alphas = alphas[::-1]
-        else:
-            valid_R = R_vals
-            valid_alphas = alphas
-
-        self.R_to_alpha = interp1d(valid_R, valid_alphas, kind='cubic',
-                                   bounds_error=False,
-                                   fill_value=(valid_alphas[0], valid_alphas[-1]))
-
-        self.alpha_to_sigZ = interp1d(alphas, sig_z, kind='cubic',
-                                      bounds_error=False,
-                                      fill_value=(sig_z[0], sig_z[-1]))
-
-    def get_skew_params(self, delta_mean, sig_v):
-        """Maps physical (Delta_mean, sigma_v) -> skewed t (omega, alpha)."""
-        ratio = delta_mean / sig_v
-        alpha = self.R_to_alpha(ratio)
-        sig_z = self.alpha_to_sigZ(alpha)
-        omega = sig_v / sig_z
-        return omega, alpha
+# ------------------------------------------------------------------ nu(r) and skew-t mapping
+def nu_of_r(r, nu0, rc, nu_floor=2.05):
+    """Tail shape nu(r) = 2 + (nu0 - 2) / (1 + (rc/r)^2), floored at nu_floor.
+    Note nu(r -> 0) = 2."""
+    return np.maximum(2.0 + (nu0 - 2.0) / (1.0 + (rc / r)**2), nu_floor)
 
 
-# instantiate globally so it isn't rebuilt on every function call
-skew_interp = SkewTMeanInterpolator(nu=6)
+def skewt_params_from_delta(delta, sig_v, nu):
+    """(omega, alpha) of a nu-dof skew-t with standard deviation sig_v and
+    location offset delta = xi - mean. Closed form:
+        mean = xi + omega * d * b_nu,
+        var  = omega^2 nu/(nu-2) - (omega * d * b_nu)^2,
+    with d = alpha/sqrt(1+alpha^2), b_nu = sqrt(nu/pi) Gamma((nu-1)/2)/Gamma(nu/2).
+    d is clipped to +-0.9999."""
+    b = np.sqrt(nu / np.pi) * np.exp(gammaln((nu - 1) / 2) - gammaln(nu / 2))
+    omega = np.sqrt((sig_v**2 + delta**2) * (nu - 2) / nu)
+    d = np.clip(-delta / (omega * b), -0.9999, 0.9999)
+    return omega, d / np.sqrt(1 - d**2)
 
 
 # ------------------------------------------------------------------ Pv_compact
@@ -132,10 +109,11 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
     mean_vr : callable
         Interpolator returning the mean radial pairwise velocity v_r(r)
         [km/s] as a function of 3D separation r.
-    pars : array-like, length 9
-        Compact-model parameters in PARAM_NAMES order:
+    pars : array-like, length 11
+        Compact-model parameters in the order:
         (sigma0, A_rho0, A_rho_p, sigma_rho,
-         A_delta0, r_delta, sigma_delta, beta_delta, alpha)
+         A_delta0, r_delta, sigma_delta, beta_delta, alpha,
+         nu_0, r_c)
     unit_conversion : float or None
         If not None, applies Mpc/h -> km/s conversion factor (a*H/h).
 
@@ -150,6 +128,7 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
     # unpack -- explicit names for clarity
     sigma0, A_rho0, A_rho_p, sigma_rho = pars[0], pars[1], pars[2], pars[3]
     A_delta0, r_delta, sigma_delta, beta_delta, alpha = pars[4], pars[5], pars[6], pars[7], pars[8]
+    nu0, r_c = pars[9], pars[10]
 
     # defensive clips: z-interpolation or cosmology-extrapolation can push
     # a predicted parameter outside the range it was ever fit within, even
@@ -159,6 +138,8 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
     sigma_delta = max(sigma_delta, 1e-3)
     beta_delta = max(beta_delta, 1e-3)
     alpha = max(alpha, 0.0)
+    nu0 = max(nu0, 2.01)
+    r_c = max(r_c, 1e-3)
 
     # mean infall projected onto LOS
     mu = mean_vr(r) * r_los / r
@@ -172,11 +153,33 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
     A_delta = A_delta_mod(r_p, A_delta0, r_delta)
     delta_val = delta_mod_alpha(x, A_delta, sigma_delta, beta_delta, alpha) * sign_rlos
 
-    # map (sig_v, delta) -> skewed t parameters
-    omega, skew_alpha = skew_interp.get_skew_params(delta_val, sig_v)
+    # r-dependent tail shape; map (sig_v, delta, nu) -> skewed t parameters
+    nu = nu_of_r(r, nu0, r_c)
+    omega, skew_alpha = skewt_params_from_delta(delta_val, sig_v, nu)
     xi = mu + delta_val
-    nu = skew_interp.nu
 
     if unit_conversion:
         return unit_conversion * skewed_t_pdf(unit_conversion * v, xi, omega, skew_alpha, nu)
     return skewed_t_pdf(v, xi, omega, skew_alpha, nu)
+
+def Pv_gaussian(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
+    """Gaussian pairwise velocity PDF using only the compact model's first two moments:
+    the LPT mean mu = <v_r|r> r_los/r and the compact-model variance sigma_v^2
+    (sigma_mod with A_rho_mod). The offset Delta and tail shape nu(r) are ignored,
+    so this has the same mean and standard deviation as Pv_compact but no skewness
+    or heavy tails. Same call signature as Pv_compact (drop-in replacement);
+    only pars[0:4] = (sigma0, A_rho0, A_rho_p, sigma_rho) are used."""
+    r = np.sqrt(r_p**2 + r_los**2)
+    x = r - r_p
+
+    sigma0, A_rho0, A_rho_p, sigma_rho = pars[0], pars[1], pars[2], pars[3]
+
+    mu = mean_vr(r) * r_los / r
+    sig_v = sigma_mod(x, sigma0, A_rho_mod(r_p, A_rho0, A_rho_p), sigma_rho)
+
+    def gauss(vv):
+        return np.exp(-0.5 * ((vv - mu) / sig_v) ** 2) / (np.sqrt(2.0 * np.pi) * sig_v)
+
+    if unit_conversion:
+        return unit_conversion * gauss(unit_conversion * v)
+    return gauss(v)
