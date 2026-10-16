@@ -17,11 +17,12 @@ EXTRACT_DIR.mkdir(parents=True, exist_ok=True)
 # environment and stay independent of that. Keep these in sync with common.py by
 # hand if ZBINS/NRAN/ELL_ALL/ELLS_FIT ever change there.
 ZBINS = {
+    'BGS_BRIGHT-21.5': [(0.1, 0.4)],
     'LRG':           [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1)],
     'ELG_LOPnotqso': [(1.1, 1.6)],
     'QSO':           [(0.8, 2.1)],
 }
-NRAN = {'LRG': 8, 'ELG_LOPnotqso': 10, 'QSO': 4}
+NRAN = {'BGS_BRIGHT-21.5': 1, 'LRG': 8, 'ELG_LOPnotqso': 10, 'QSO': 4}
 ELL_ALL = (0, 2, 4)
 ELLS_FIT = (0, 2)
 SMIN, SMAX, DS = 20., 200., 4.

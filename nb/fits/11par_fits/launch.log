@@ -1,0 +1,24 @@
+nohup: ignoring input
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792172753.947560  223548 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792172753.949044  223548 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792172755.272548  223548 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792172755.273461  223548 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+skipping 48 fits that already converged (use --rerun to include them)
+7 fits, 7 joint / 0 individual, 21 cores if all run at once (budget 112)
+  [0] compact_mean_joint_avgcov_smin20                 cores=3
+  [0] compact_dr1_joint_noBGS_smin20                   cores=3
+  [0] compact_dr1_joint_noLRG1_smin20                  cores=3
+  [0] compact_dr1_joint_noLRG2_smin20                  cores=3
+  [0] compact_dr1_joint_noLRG3_smin20                  cores=3
+  [0] compact_dr1_joint_noELG2_smin20                  cores=3
+  [0] compact_dr1_joint_noQSO_smin20                   cores=3
+10:45:55 started compact_mean_joint_avgcov_smin20 (3 cores)
+10:45:55 started compact_dr1_joint_noBGS_smin20 (3 cores)
+10:45:55 started compact_dr1_joint_noLRG1_smin20 (3 cores)
+10:45:55 started compact_dr1_joint_noLRG2_smin20 (3 cores)
+10:45:55 started compact_dr1_joint_noLRG3_smin20 (3 cores)
+10:45:55 started compact_dr1_joint_noELG2_smin20 (3 cores)
+10:45:55 started compact_dr1_joint_noQSO_smin20 (3 cores)
+14:11:55 finished compact_dr1_joint_noELG2_smin20 (exit 0); 0 pending, 6 running
