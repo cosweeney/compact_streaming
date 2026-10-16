@@ -4,3 +4,7 @@ nb/calibration/diagnostic_plots
 nb/calibration/runs/figures
 nb/drafts/figures
 nb/drafts/from_chw
+nb/drafts/auto_update/figures
+nb/drafts/auto_update/figures_nu
+nb/drafts/auto_update/nu_tets_cache
+nb/calibration/runs/auto_runs/figures
