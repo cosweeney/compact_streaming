@@ -18,7 +18,8 @@ import numpy as np
 import h5py as h5
 import matplotlib
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, least_squares
+from scipy.special import gammaln
 from scipy.interpolate import InterpolatedUnivariateSpline
 from matplotlib.lines import Line2D
 from matplotlib.patches import Wedge, Rectangle
@@ -32,7 +33,9 @@ matplotlib.rcParams.update({'text.usetex': USETEX,
                             'font.serif': ['Computer Modern Roman'],
                             'mathtext.fontset': 'cm',
                             'axes.labelsize': 20,
-                            'axes.xmargin': 0})          # x-margins zero everywhere
+                            'axes.xmargin': 0,                   # x-margins zero everywhere
+                            'figure.dpi': 200,                   # sharp on screen / when pasted into slides
+                            'savefig.dpi': 300})
 
 CACHE = 'paper_figs_cache.h5'
 FIGURES_DIR = 'figures'
@@ -90,7 +93,7 @@ def jackknife_mean_err(arr):
 
 
 def save(fig, name):
-    fig.savefig(os.path.join(FIGURES_DIR, name), dpi=150)
+    fig.savefig(os.path.join(FIGURES_DIR, name))
     print(f'saved {os.path.join(FIGURES_DIR, name)}')
 
 
@@ -132,7 +135,7 @@ fig1_ks = bins_in(C['fig1']) if 'fig1' in C else []
 if not fig1_ks:
     print('Fig 1: no cache section -- skipping')
 else:
-    fig, ax = plt.subplots(2, 2, figsize=(11, 8), sharex='col', gridspec_kw={'height_ratios': [1.2, 1]})
+    fig, ax = plt.subplots(2, 2, figsize=(11, 8), sharex='col', gridspec_kw={'height_ratios': [2, 1]})   # bottom row = a third of the height
     offset_step = 0.5
 
     def plot_ratio_bands(ax_, r, baseline, err, color):
@@ -143,7 +146,7 @@ else:
     for n, k in enumerate(fig1_ks):
         d = C['fig1'][f'bin_{k}']
         lo, hi = LOG_MASS_EDGES[k]
-        ax[0, 0].plot(d['r_vr'], d['vr'], 'o', ms=3, c=f'C{n}', zorder=2, label=rf'$\log M \in [{lo:.2f}, {hi:.2f}]$')
+        ax[0, 0].plot(d['r_vr'], d['vr'], 'o', ms=3, c=f'C{n}', zorder=2, label=rf'$\log_{{10}}(M/h^{{-1}}M_\odot) \in [{lo:.2f}, {hi:.2f}]$')
         ax[0, 0].fill_between(d['r_vr'], d['vr'] - d['vr_err'], d['vr'] + d['vr_err'], color=f'C{n}', alpha=0.25, lw=0)
         ax[0, 0].plot(d['r_vr'], d['vr_model'], '-', c=f'C{n}')
 
@@ -165,17 +168,18 @@ else:
 
     for ax_ in ax.flat:
         ax_.axvline(R_MIN_FIT, color='gray', ls=':', lw=1)
-    ax[0, 0].set_ylabel(r'$\langle v_r|r\rangle$ [km/s]')
-    ax[0, 1].set_ylabel(r'$r^2\,\xi_{\rm hh}(r|M)$ [$(h^{-1}\,{\rm Mpc})^2$]')
-    ax[1, 0].set_ylabel('model / data (+ offset)')
-    ax[1, 0].set_xlabel(r'$r$ [$h^{-1}$ Mpc]')
-    ax[1, 1].set_xlabel(r'$r$ [$h^{-1}$ Mpc]')
-    ax[0, 0].legend(fontsize=8, ncol=2)
+    for ax_ in ax[0]:
+        ax_.axhline(0, c='k', ls='--', lw=1, zorder=0)                # y = 0 reference
+    ax[0, 0].set_ylabel(r'$\langle v_r|r\rangle$ [km/s]', fontsize=28)
+    ax[0, 1].set_ylabel(r'$r^2\,\xi_{\rm hh}(r|M)$ [$(h^{-1}\,{\rm Mpc})^2$]', fontsize=28)
+    ax[1, 0].set_ylabel('model / data\n(+ offset)', fontsize=24)
+    ax[1, 0].set_xlabel(r'$r$ [$h^{-1}$ Mpc]', fontsize=24)
+    ax[1, 1].set_xlabel(r'$r$ [$h^{-1}$ Mpc]', fontsize=24)
+    ax[0, 0].legend(fontsize=15)
     ax[1, 1].sharey(ax[1, 0])
     ax[1, 1].tick_params(labelleft=False)
     fig.tight_layout()
     save(fig, 'fig1_joint_fit.png')
-
 
 #%% Fig 1 -- best-fit b1, b2 vs mass
 if fig1_ks:
@@ -202,10 +206,11 @@ else:
         m = (sig23[j] > SIG_FLOOR) & (r3_2d[j] <= R3_MAX_PLOT)
         ax[0].plot(r3_2d[j][m], sig23[j][m]**2, 'o', ms=3, c=c)
         ax[1].plot(x_grid[j][m], sig23[j][m]**2, 'o', ms=3, c=c)
-        if m.sum() < 2:
-            continue
-        xs = np.linspace(x_grid[j][m].min(), x_grid[j][m].max(), 500)
-        ax[1].plot(xs, cm.sigma_mod(xs, sp[0], cm.A_rho_mod(r_p[j], sp[1], sp[2]), sp[3])**2, '--', c=c, lw=1)
+    x_lo, x_hi = ax[1].get_xlim()                       # model curves run the full plotted range, not just each row's data
+    xs = np.linspace(x_lo, x_hi, 500)
+    for c, j in zip(cmap, plot_rows):
+        ax[1].plot(xs, cm.sigma_mod(xs, sp[0], cm.A_rho_mod(r_p[j], sp[1], sp[2]), sp[3])**2, '-', c=c, lw=1.0, alpha=0.4, zorder=1)
+    ax[1].set_xlim(x_lo, x_hi)
     ax[0].set_xlabel(r'$r$ [$h^{-1}$ Mpc]')
     ax[0].set_ylabel(r'$\sigma_v^2(r|r_\perp)$ [(km/s)$^2$]')
     ax[1].set_xlabel(r'$x = r - r_\perp$ [$h^{-1}$ Mpc]')
@@ -217,14 +222,15 @@ else:
 
     skip = 2
     valid = np.isfinite(d['A_rho_R'])
-    fig3, ax3 = plt.subplots(figsize=(6, 5))
+    fig3, ax3 = plt.subplots(figsize=(7.5, 6))
     ax3.errorbar(r_p[valid][::skip], d['A_rho_R'][valid][::skip], d['A_rho_R_err'][valid][::skip],
                  fmt='o', c='k', ms=4, label=r'per-$r_\perp$ fit')
     ax3.plot(r_p, cm.A_rho_mod(r_p, sp[1], sp[2]), c='C1',
              label=rf'$A_{{\rho,0}}e^{{-(r_\perp-{cm.R_PIV_FIXED:g})/A_{{\rho,p}}}}$')
     ax3.set_xlabel(r'$r_\perp$ [$h^{-1}$ Mpc]')
     ax3.set_ylabel(r'$A_\rho(r_\perp)$')
-    ax3.legend(fontsize=8)
+    ax3.legend(fontsize=15)
+    ax3.tick_params(labelsize=15)
     fig3.tight_layout()
     save(fig3, 'fig3_A_rho.png')
 
@@ -241,10 +247,11 @@ else:
         m = np.isfinite(D4[j]) & (r3_2d[j] <= R3_MAX_PLOT)
         ax[0].plot(r3_2d[j][m], D4[j][m], 'o', ms=3, c=c)
         ax[1].plot(x_grid[j][m], D4[j][m], 'o', ms=3, c=c)
-        if m.sum() < 2:
-            continue
-        xs = np.linspace(x_grid[j][m].min(), x_grid[j][m].max(), 500)
-        ax[1].plot(xs, cm.delta_mod_alpha(xs, cm.A_delta_mod(r_p[j], dp[0], dp[1]), *dp[2:]), '--', c=c, lw=1)
+    x_lo, x_hi = ax[1].get_xlim()                       # model curves run the full plotted range, not just each row's data
+    xs = np.linspace(x_lo, x_hi, 500)
+    for c, j in zip(cmap, plot_rows):
+        ax[1].plot(xs, cm.delta_mod_alpha(xs, cm.A_delta_mod(r_p[j], dp[0], dp[1]), *dp[2:]), '-', c=c, lw=1.0, alpha=0.4, zorder=1)
+    ax[1].set_xlim(x_lo, x_hi)
     ax[0].set_xlabel(r'$r$ [$h^{-1}$ Mpc]')
     ax[0].set_ylabel(r'$\Delta(r|r_\perp)$ [km/s]')
     ax[1].set_xlabel(r'$x = r - r_\perp$ [$h^{-1}$ Mpc]')
@@ -255,15 +262,44 @@ else:
     skip = 2
     d = C['fig23']
     valid = np.isfinite(d['A_delta_R'])
-    fig5, ax5 = plt.subplots(figsize=(6, 5))
+    fig5, ax5 = plt.subplots(figsize=(7.5, 6))
     ax5.errorbar(r_p[valid][::skip], d['A_delta_R'][valid][::skip], d['A_delta_R_err'][valid][::skip],
                  fmt='o', c='k', ms=4, label=r'per-$r_\perp$ fit')
     ax5.plot(r_p, cm.A_delta_mod(r_p, dp[0], dp[1]), c='C1', label=r'$A_{\Delta,0}\,e^{-r_\perp/r_\Delta}$')
     ax5.set_xlabel(r'$r_\perp$ [$h^{-1}$ Mpc]')
-    ax5.set_ylabel(r'$A_\Delta(r_\perp)$')
-    ax5.legend(fontsize=8)
+    ax5.set_ylabel(r'$A_\Delta(r_\perp)$ [km/s]')
+    ax5.legend(fontsize=15)
+    ax5.tick_params(labelsize=15)
     fig5.tight_layout()
     save(fig5, 'fig4b_A_delta.png')
+
+
+#%% Free nu(r) per cell (single phase, mass bin 2) and the hill2 fit we use, nu(r) = 2 + (nu_0 - 2)/(1 + (r_c/r)^2) = cm.nu_of_r
+NU_BOUNDS = (2.1, 1000.0)       # free-nu bounds of the per-cell fits; cells pinned at a bound are censored values, not measurements
+NU_YLIM = (2.0, 300.0)
+
+if 'fig23' not in C or 'nu_hill' not in C['fig23']:
+    print('free nu(r): needs cache section fig23 with nu_hill (rebuild fig23) -- skipping')
+else:
+    d = C['fig23']
+    nu = d['nu_free']
+    shown = np.isfinite(nu) & (nu > 1.01 * NU_BOUNDS[0]) & (nu < 0.99 * NU_BOUNDS[1])
+    print(f"free nu(r): {shown.sum()} cells shown, {(np.isfinite(nu) & ~shown).sum()} pinned at a bound omitted; "
+          f"fit nu_0 = {d['nu_hill'][0]:.2f}, r_c = {d['nu_hill'][1]:.2f} (Config defaults: {PARS[9]:.2f}, {PARS[10]:.2f})")
+    fig, ax = plt.subplots(figsize=(8.5, 5.5), layout='constrained')
+    sc = ax.scatter(r3_2d[shown], nu[shown], s=3, c=np.broadcast_to(r_p[:, None], nu.shape)[shown], cmap='viridis',
+                    vmin=r_p.min(), vmax=r_p.max(), alpha=0.6, rasterized=True)
+    ax.plot(d['nu_med_r'], d['nu_med'], 'ko', ms=4, zorder=7, label='bin medians')
+    rr = np.linspace(r3_2d[shown].min(), r3_2d[shown].max(), 300)
+    ax.plot(rr, cm.nu_of_r(rr, *d['nu_hill']), c='C1', lw=3, zorder=6,
+            label=rf'$2+(\nu_0-2)/(1+(r_c/r)^2)$: $\nu_0={d["nu_hill"][0]:.1f}$, $r_c={d["nu_hill"][1]:.1f}$')
+    ax.set_yscale('log')
+    ax.set_ylim(*NU_YLIM)
+    ax.set_xlabel(r'$r$ [$h^{-1}$ Mpc]')
+    ax.set_ylabel(r'$\nu(r|r_\perp)$')
+    ax.legend(fontsize=9, loc='lower right')
+    fig.colorbar(sc, ax=ax, label=r'$r_\perp$ [$h^{-1}$ Mpc]')
+    save(fig, 'fig4c_nu_free_hill2.png')
 
 
 #%% Fig 5 -- the 11 velocity-model parameters vs mass, b1, b2 (per-phase fits + jackknife mean)
@@ -394,15 +430,15 @@ else:
                 ax.set_ylabel(labels[c])
                 ax.tick_params(labelbottom=False)
 
-                resid = (pred_avg[:, p] / data_avg[:, p] - 1)
-                axr.axhspan(-0.10, 0.10, color='gray', alpha=0.2, lw=0)
-                axr.axhspan(-0.05, 0.05, color='gray', alpha=0.3, lw=0)
+                resid = 100 * (pred_avg[:, p] / data_avg[:, p] - 1)
+                axr.axhspan(-10, 10, color='gray', alpha=0.2, lw=0)
+                axr.axhspan(-5, 5, color='gray', alpha=0.3, lw=0)
                 axr.axhline(0, c='k', ls='--', lw=1)
                 axr.plot(cos6[:, c_col], resid, 'o', ms=3, c=COL_AVG6)
-                axr.set_ylim(-0.15, 0.15)
+                axr.set_ylim(-15, 15)
                 axr.set_xlabel(COSMO_LABELS[c_col])
                 if c == 0:
-                    axr.set_ylabel(r'perc. diff.')
+                    axr.set_ylabel(r'resid. [\%]')
                 if r_ == 0 and c == 0:
                     ax.legend(fontsize=7, loc='upper left')
         save(fig, fname)
@@ -412,30 +448,80 @@ else:
     cosmo_figure([9, 10], LABELS[9:11], 'fig6_nu.png')
 
 
-
-
-#%% Fig 7 setup -- shared by the diagonal (six-panel) and 3x3 figures
+#%% Fig 7 setup -- shared by the diagonal (six-panel) and 3x3 figures, for the main (r = 15, 30, 60) and inner (r = 5, 15, 45) bin sets
 # P(v_los | r_perp, r_los) in mass bin 2: histogram vs skew-t model (Config._MEAN_PARAMS) vs Gaussian with the model's mean and variance
 V_LIM, V_PLOT = 2500.0, 2000.0     # model-curve range / displayed x-range [km/s]
 MIN_COUNT = 1                      # rebinned v-bins with fewer pairs are masked
 Y_FLOOR = 1e-5                     # log-y lower limit, as a fraction of the panel's peak
-R_INSET = 85.0                    # quarter-disk radius in the inset
+R_INSET = 85.0                     # quarter-disk radius in the inset
 INSET_PAD = 0.0 * R_INSET
 RING_W = 5.0                       # schematic width of the quarter ring at the bin's r [h^-1 Mpc]
+R_SWITCH = 15.0                    # inner set: below this 3D separation r the MEASURED <v_r|r> replaces velocileptors (hard switch)
 REBIN = 5
- 
+
 def gauss_pdf(v, mu, sd):
     return np.exp(-0.5 * ((v - mu) / sd)**2) / (np.sqrt(2 * np.pi) * sd)
- 
- 
-if 'fig7' not in C:
-    print('Fig 7: no cache section -- skipping')
+
+
+def skewt_shape_moments(delta, nu):
+    """(variance / omega^2, skewness, excess kurtosis) of a nu-dof skew-t with delta = alpha / sqrt(1 + alpha^2)
+    (Azzalini & Capitanio; skewness needs nu > 3, kurtosis nu > 4)."""
+    b = np.sqrt(nu / np.pi) * np.exp(gammaln((nu - 1) / 2) - gammaln(nu / 2))
+    mz2, d2 = (delta * b)**2, delta**2
+    var = nu / (nu - 2) - mz2
+    g1 = delta * b * (nu * (3 - d2) / (nu - 3) - 3 * nu / (nu - 2) + 2 * mz2) / var**1.5
+    g2 = (3 * nu**2 / ((nu - 2) * (nu - 4)) - 4 * mz2 * nu * (3 - d2) / (nu - 3) - 3 * mz2**2 + 6 * mz2 * nu / (nu - 2)) / var**2 - 3
+    return var, g1, g2
+
+
+def skewt_params_from_moments(mean, var, g1=None, g2=None, nu=None):
+    """(xi, omega, alpha, nu, shape residual) of the skew-t with the given mean and variance and
+    - g2 given (with g1): skewness and excess kurtosis matched, delta and nu solved (4 moments, 4 parameters);
+    - g2 None, nu given: skewness matched at that nu, delta solved (3 moments; needs nu > 3).
+    The residual is the mismatch of the shape moments that could not be matched (e.g. a target outside what the family reaches)."""
+    if g2 is not None:
+        best = None
+        for nu0 in (5.0, 8.0, 15.0, 40.0):
+            sol = least_squares(lambda p: np.array(skewt_shape_moments(p[0], p[1])[1:]) - np.array([g1, g2]),
+                                [0.5 * np.sign(g1 or 1.0), nu0], bounds=([-0.999, 4.05], [0.999, 2000.0]))
+            if best is None or sol.cost < best.cost:
+                best = sol
+        delta, nu = best.x
+        miss = np.sqrt(2 * best.cost)
+    else:
+        sol = least_squares(lambda p: [skewt_shape_moments(p[0], nu)[1] - g1], [0.5 * np.sign(g1 or 1.0)], bounds=(-0.999, 0.999))
+        delta, miss = sol.x[0], abs(sol.fun[0])
+    b = np.sqrt(nu / np.pi) * np.exp(gammaln((nu - 1) / 2) - gammaln(nu / 2))
+    omega = np.sqrt(var / skewt_shape_moments(delta, nu)[0])
+    return mean - omega * delta * b, omega, delta / np.sqrt(1 - delta**2), nu, miss
+
+
+def make_fig7_set(name, r_switch=None):
+    """Cache group `name` plus its mean-v_r function. With r_switch, <v_r|r> is the measured stacked-phase profile for r < r_switch
+    and the velocileptors one for r >= r_switch; without it, velocileptors everywhere."""
+    d = C[name]
+    g = d['bin']
+    lpt_sp = InterpolatedUnivariateSpline(g['r_tab'], g['vr_model'], k=3, ext=3)
+    meas_sp = None
+    if r_switch is None:
+        vr, note = lpt_sp, None
+    else:
+        meas_sp = InterpolatedUnivariateSpline(g['r_meas'], g['vr_meas'], k=3, ext=3)
+        vr = lambda r: np.where(np.asarray(r) < r_switch, meas_sp(r), lpt_sp(r))
+        note = rf'Uses measured mean for $r<{r_switch:g}$'
+    return dict(g=g, vr=vr, vr_lpt=lpt_sp, vr_meas=meas_sp, RP=d['rp_sel'], RL=d['rl_sel'], v=d['v_centers'], note=note)
+
+
+FIG7_SETS = {}
+if 'fig7' in C:
+    FIG7_SETS['main'] = make_fig7_set('fig7')
+if 'fig7_inner' in C:
+    FIG7_SETS['inner'] = make_fig7_set('fig7_inner', r_switch=R_SWITCH)
+
+if not FIG7_SETS:
+    print('Fig 7: no cache sections fig7 / fig7_inner -- skipping')
 else:
-    d7 = C['fig7']
-    RP_SEL, RL_SEL = d7['rp_sel'], d7['rl_sel']
-    g7 = d7['bin']
-    vr_spline = InterpolatedUnivariateSpline(g7['r_tab'], g7['vr_model'], k=3, ext=3)
-    v7 = d7['v_centers']
+    v7 = next(iter(FIG7_SETS.values()))['v']
     cent = v7.reshape(-1, REBIN).mean(axis=1)
     dv = (v7[1] - v7[0]) * REBIN
     edges = np.r_[cent - dv / 2, cent[-1] + dv / 2]
@@ -444,16 +530,78 @@ else:
     legend_handles = [Line2D([], [], c='k', lw=1.5, label='AbacusSummit (stacked phases)'),
                       Line2D([], [], c='C0', lw=2, label='Skew-t model'),
                       Line2D([], [], c='C1', lw=2, label='Gaussian')]
- 
-    def vlos_panel(ax_, rp_t, rl_t, logy, fancy_inset=False, inset=True):
+
+    def legend_for(S, match=False):
+        note = rf'$r<{R_SWITCH:g}$ panels: skew-t matched to the histogram\'s ' + {2: 'mean and variance', 3: 'mean, variance and skewness', 4: 'first four moments'}[match] if match else S['note']
+        return legend_handles + ([Line2D([], [], c='none', label=note)] if note else [])
+
+    def model_curves(S, j, i, v, match):
+        """(skew-t pdf, Gaussian pdf, mean, variance, source) on the velocity grid v for cell (j, i). Default: the model's own inputs
+        (mean from <v_r|r>, variance from sigma_mod). match = 2, 3 or 4 and r < R_SWITCH: the skew-t is matched to the histogram's
+        lowest 2 (mean, variance; model Delta and nu kept), 3 (+ skewness, at the model's nu) or 4 (+ excess kurtosis, nu solved) moments
+        on the fine v grid. The Gaussian always takes the histogram's mean and variance in those panels."""
+        r3, rp, rl = r3_2d[j, i], r_p[j], r_l[i]
+        if match and r3 < R_SWITCH:
+            counts = S['g'][f'cell_{j}_{i}']['counts'].astype(float)
+            w = counts / counts.sum()
+            mu = np.sum(v7 * w)
+            sig2 = np.sum((v7 - mu)**2 * w)
+            g1, g2 = np.sum((v7 - mu)**3 * w) / sig2**1.5, np.sum((v7 - mu)**4 * w) / sig2**2 - 3.0
+            nu_model = float(cm.nu_of_r(r3, PARS[9], PARS[10]))
+            if match == 2:                                         # mean, variance; the model's Delta and nu(r) keep the shape
+                delta = cm.delta_mod_alpha(r3 - rp, cm.A_delta_mod(rp, PARS[4], PARS[5]), *PARS[6:9])
+                om_, al_ = cm.skewt_params_from_delta(delta, np.sqrt(sig2), nu_model)
+                xi_, nu_ = mu + delta, nu_model
+                src = f'histogram mean, variance (model Delta, nu = {nu_:.2f})'
+            elif match == 3:                                       # + skewness at the model's nu (floored at 3.05, the minimum for a finite skewness)
+                nu_ = max(nu_model, 3.05)
+                xi_, om_, al_, nu_, miss = skewt_params_from_moments(mu, sig2, g1=g1, nu=nu_)
+                src = f'histogram mean, variance, skewness (nu = {nu_:.2f}, model nu = {nu_model:.2f}, shape residual {miss:.2g})'
+            else:                                                  # + excess kurtosis: delta and nu both solved
+                xi_, om_, al_, nu_, miss = skewt_params_from_moments(mu, sig2, g1=g1, g2=g2)
+                src = f'histogram mean, variance, skewness, kurtosis (nu = {nu_:.2f}, shape residual {miss:.2g})'
+            pdf_c = cm.skewed_t_pdf(v, xi_, om_, al_, nu_)
+        else:
+            mu = float(S['vr'](r3)) * rl / r3
+            sig2 = float(cm.sigma_mod(r3 - rp, PARS[0], cm.A_rho_mod(rp, PARS[1], PARS[2]), PARS[3]))**2
+            pdf_c = cm.Pv_compact(v, rp, rl, S['vr'], PARS)
+            src = 'measured <v_r|r>' if (S['vr_meas'] is not None and r3 < R_SWITCH) else 'velocileptors <v_r|r>'
+        return pdf_c, gauss_pdf(v, mu, np.sqrt(sig2)), mu, sig2, src
+
+    def fig7_moments(S, rp_t, rl_t, match=False):
+        """Print the mean and variance of the simulation histogram, the skew-t model and the Gaussian for one bin, all on the fine
+        v grid of the pair histograms (so the same velocity range for all three), next to the mean / variance the model is built with."""
         j, i = int(np.argmin(np.abs(r_p - rp_t))), int(np.argmin(np.abs(r_l - rl_t)))
-        counts = g7[f'cell_{j}_{i}']['counts'].reshape(-1, REBIN).sum(axis=1)
-        hist = counts / (counts.sum() * dv)
+        counts = S['g'][f'cell_{j}_{i}']['counts'].astype(float)
         r3 = r3_2d[j, i]
-        mu = vr_spline(r3) * r_l[i] / r3                                   # skew-t mean (by construction)
-        sig = cm.sigma_mod(r3 - r_p[j], PARS[0], cm.A_rho_mod(r_p[j], PARS[1], PARS[2]), PARS[3])   # skew-t std
-        pdf_c = cm.Pv_compact(vv, r_p[j], r_l[i], vr_spline, PARS)
-        pdf_g = gauss_pdf(vv, mu, sig)                                     # same two lowest moments
+        pdf_c, pdf_g, mu_used, sig2_used, src = model_curves(S, j, i, v7, match)
+        proj = r_l[i] / r3
+        mu_lpt = float(S['vr_lpt'](r3)) * proj
+        mu_meas = None if S['vr_meas'] is None else float(S['vr_meas'](r3)) * proj
+        sig2_default = float(cm.sigma_mod(r3 - r_p[j], PARS[0], cm.A_rho_mod(r_p[j], PARS[1], PARS[2]), PARS[3]))**2
+        dvf = v7[1] - v7[0]
+
+        def moments(w):                                            # w: weights per fine v-bin
+            tot = w.sum()
+            m = np.sum(v7 * w) / tot
+            var = np.sum((v7 - m)**2 * w) / tot
+            return tot, m, var, np.sum((v7 - m)**3 * w) / tot / var**1.5, np.sum((v7 - m)**4 * w) / tot / var**2 - 3.0
+        rows = [('simulation histogram',) + moments(counts)[1:] + (1.0,),
+                ('skew-t model',) + moments(pdf_c * dvf)[1:] + (pdf_c.sum() * dvf,),
+                ('Gaussian',) + moments(pdf_g * dvf)[1:] + (pdf_g.sum() * dvf,)]
+        print(f"bin r_perp = {r_p[j]:.1f}, r_los = {r_l[i]:.1f} (r = {r3:.1f}), {counts.sum():.3g} pairs; v range [{v7[0]:.0f}, {v7[-1]:.0f}] km/s")
+        print(f"   model inputs used: mean {mu_used:.1f} km/s, variance {sig2_used:.5g} (km/s)^2 [{src}]")
+        print(f"   default inputs:    mean velocileptors {mu_lpt:.1f}" + (f", measured {mu_meas:.1f}" if mu_meas is not None else '')
+              + f" km/s, sigma_v^2 {sig2_default:.5g} (km/s)^2")
+        print(f"   {'':22s} {'mean [km/s]':>12s} {'variance [(km/s)^2]':>20s} {'std [km/s]':>11s} {'skewness':>9s} {'ex. kurtosis':>13s} {'pdf mass':>9s}")
+        for name, m, var, g1_, g2_, mass in rows:
+            print(f"   {name:22s} {m:12.1f} {var:20.5g} {np.sqrt(var):11.1f} {g1_:9.3f} {g2_:13.3f} {mass:9.4f}")
+
+    def vlos_panel(ax_, rp_t, rl_t, logy, S, fancy_inset=False, inset=True, match=False):
+        j, i = int(np.argmin(np.abs(r_p - rp_t))), int(np.argmin(np.abs(r_l - rl_t)))
+        counts = S['g'][f'cell_{j}_{i}']['counts'].reshape(-1, REBIN).sum(axis=1)
+        hist = counts / (counts.sum() * dv)
+        pdf_c, pdf_g, _, _, _ = model_curves(S, j, i, vv, match)
         ax_.stairs(np.where(counts >= MIN_COUNT, hist, 1e-30), edges, color='k', lw=1.2)
         ax_.plot(vv, pdf_g, c='C1', lw=2)
         ax_.plot(vv, pdf_c, c='C0', lw=2)
@@ -471,7 +619,7 @@ else:
 
         if not inset:
             return
- 
+
         # inset: where this bin sits on the (R, r_los) quarter-disk
         if fancy_inset:
             ins = ax_.inset_axes([0.78, 0.60, 0.20, 0.36])
@@ -507,87 +655,76 @@ else:
         ins.set_xlabel(r'$r_\perp$', fontsize=15, labelpad=1)
         ins.set_ylabel(r'$r_{\rm los}$', fontsize=15, labelpad=1)
 
+
 #%% Fig 7a -- r_los = r_perp = r_ii bins, one column per r_ii: linear y (top row), log y (bottom row); inset in the top row only
-if 'fig7' in C:
-    n_ii = len(RP_SEL)
+def plot_fig7a(S, fname, match=False):
+    n_ii = len(S['RP'])
     fig, axs = plt.subplots(2, n_ii, figsize=(5 * n_ii, 8), layout='constrained', sharex=True)
     for n in range(n_ii):
+        fig7_moments(S, S['RP'][n], S['RL'][n], match)
         for r_, logy in enumerate((False, True)):
-            vlos_panel(axs[r_, n], RP_SEL[n], RL_SEL[n], logy, fancy_inset=True, inset=(r_ == 0))
+            vlos_panel(axs[r_, n], S['RP'][n], S['RL'][n], logy, S, fancy_inset=True, inset=(r_ == 0), match=match)
     for ax_ in axs[-1]:
         ax_.set_xlabel(r'$v_{\rm los}$ [km/s]')
-    axs[1, 0].legend(handles=legend_handles, fontsize=12, loc='lower center')
+    axs[1, 0].legend(handles=legend_for(S, match), fontsize=8, loc='lower center')
     fig.supylabel(r'$P(v_{\rm los}\,|\,r_\perp, r_{\rm los})$', fontsize=35)
-    save(fig, 'fig7a_diagonal_lin_log.png')
+    save(fig, fname)
+
+
+for key, fname in (('main', 'fig7a_diagonal_lin_log.png'), ('inner', 'fig7a_diagonal_lin_log_inner.png')):
+    if key in FIG7_SETS:
+        plot_fig7a(FIG7_SETS[key], fname)
+
+
+#%% Fig 7a, matched versions -- panels with r < R_SWITCH: skew-t matched to the histogram's lowest 2, 3 or 4 moments (Gaussian: mean and variance)
+def plot_fig7a(S, fname, match=False):
+    n_ii = len(S['RP'])
+    fig, axs = plt.subplots(2, n_ii, figsize=(5 * n_ii, 8), layout='constrained', sharex=True)
+    for n in range(n_ii):
+        fig7_moments(S, S['RP'][n], S['RL'][n], match)
+        for r_, logy in enumerate((False, True)):
+            vlos_panel(axs[r_, n], S['RP'][n], S['RL'][n], logy, S, fancy_inset=True, inset=(r_ == 0), match=match)
+    for ax_ in axs[-1]:
+        ax_.set_xlabel(r'$v_{\rm los}$ [km/s]')
+    axs[1, 0].legend(handles=legend_for(S, match), fontsize=8, loc='lower center')
+    fig.supylabel(r'$P(v_{\rm los}\,|\,r_\perp, r_{\rm los})$', fontsize=35)
+    save(fig, fname)
+
+if 'inner' in FIG7_SETS:                       # the main set (r >= 22) has no panel below R_SWITCH, so it would be unchanged
+    for n_mom in (2, 3, 4):
+        plot_fig7a(FIG7_SETS['inner'], f'fig7a_diagonal_lin_log_inner_matched{n_mom}.png', match=n_mom)
+
 
 #%% Fig 7b -- 3x3 grid over the same r_perp, r_los values, linear y-axis
-if 'fig7' in C:
-    nr, nc = len(RL_SEL), len(RP_SEL)
+def plot_fig7b(S, fname):
+    nr, nc = len(S['RL']), len(S['RP'])
     fig, axs = plt.subplots(nr, nc, figsize=(5 * nc, 4 * nr), layout='constrained', sharex=True)
     axs = np.atleast_2d(axs)
-    for a, rl_t in enumerate(RL_SEL):
-        for b_, rp_t in enumerate(RP_SEL):
-            vlos_panel(axs[a, b_], rp_t, rl_t, logy=False, fancy_inset=True)
+    for a, rl_t in enumerate(S['RL']):
+        for b_, rp_t in enumerate(S['RP']):
+            fig7_moments(S, rp_t, rl_t)
+            vlos_panel(axs[a, b_], rp_t, rl_t, False, S, fancy_inset=True)
             if a == nr - 1:
                 axs[a, b_].set_xlabel(r'$v_{\rm los}$ [km/s]')
-    axs[0, 0].legend(handles=legend_handles, fontsize=12, loc='lower right')
+    axs[0, 0].legend(handles=legend_for(S), fontsize=12, loc='upper left')
     fig.supylabel(r'$P(v_{\rm los}\,|\,r_\perp, r_{\rm los})$', fontsize=35)
-    save(fig, 'fig7b_grid_linear.png')
+    save(fig, fname)
 
-#%% Diagnostic -- <v_los^2> vs r: simulation vs compact sigma_v model vs velocileptors (mass bin 2, same phase as Figs 2-4)
-# Everything is a second moment about zero: sim = sum v^2 / n; compact = sigma_v^2 + mu^2 (mu = LPT mean v_r projected on
-# the LOS); velocileptors = conv^2 f^2 (s0 + P2 s2)/(1+xi), pwv_variance without its mean subtraction.
-R_LO_D, R_HI_D = 15.0, 130.0
-RP_DIAG = [5.5, 15.5, 30.5, 60.5]
- 
-if 'lpt_sigma' not in C or 'fig23' not in C:
-    print('sigma_v vs velocileptors: needs cache sections lpt_sigma and fig23 -- skipping')
-else:
-    dl, sp = C['lpt_sigma'], C['fig23']['sig_params']
-    vr_d = InterpolatedUnivariateSpline(dl['r_tab'], dl['vr_model'], k=3, ext=3)
-    n_c = len(RP_DIAG)
-    fig, axs = plt.subplots(2, n_c, figsize=(4.5 * n_c, 7), sharex='col', layout='constrained',
-                            gridspec_kw={'height_ratios': [3, 1]})
-    for c, rp_t in enumerate(RP_DIAG):
-        j = int(np.argmin(np.abs(r_p - rp_t)))
-        r3 = r3_2d[j]
-        mu = vr_d(r3) * r_l / r3
-        x = r3 - r_p[j]
-        m2_fit = cm.sigma_mod(x, sp[0], cm.A_rho_mod(r_p[j], sp[1], sp[2]), sp[3])**2 + mu**2
-        m2_def = cm.sigma_mod(x, PARS[0], cm.A_rho_mod(r_p[j], PARS[1], PARS[2]), PARS[3])**2 + mu**2
-        m2_sim, m2_lpt, m2_lfit = dl['m2_meas'][j], dl['m2_lpt'][j], dl['m2_lpt_fit'][j]
-        ok = (r3 >= R_LO_D) & (r3 <= R_HI_D) & np.isfinite(m2_sim)
- 
-        ax, axr = axs[0, c], axs[1, c]
-        ax.plot(r3[ok], m2_sim[ok], 'o', ms=3, c='k', label='simulation')
-        ax.plot(r3[ok], m2_fit[ok], c='C0', lw=2, label=r'compact, bin-2 $\sigma_v$ fit')
-        ax.plot(r3[ok], m2_def[ok], c='C2', lw=2, ls='--', label=r'compact, default parameters')
-        ax.plot(r3[ok], m2_lpt[ok], c='C3', lw=2, ls=':', label='velocileptors (no counterterms)')
-        ax.plot(r3[ok], m2_lfit[ok], c='C1', lw=2, ls='-.', label=r'velocileptors + fitted $s_{2,\rm fog}$')
-        axr.axhline(0, c='k', ls='--', lw=1)
-        for m2_, col, ls in ((m2_fit, 'C0', '-'), (m2_def, 'C2', '--'), (m2_lpt, 'C3', ':'), (m2_lfit, 'C1', '-.')):
-            axr.plot(r3[ok], (m2_ - m2_sim)[ok], c=col, lw=2, ls=ls)
-        ax.set_title(rf'$r_\perp\in[{r_perp_edges[j]:.0f}, {r_perp_edges[j+1]:.0f}]$ $h^{{-1}}$Mpc', fontsize=12)
-        axr.set_xlabel(r'$r$ [$h^{-1}$ Mpc]')
-        axr.set_xlim(R_LO_D, R_HI_D)
-        if c == 0:
-            ax.set_ylabel(r'$\langle v_{\rm los}^2\rangle$ [(km/s)$^2$]')
-            axr.set_ylabel('model $-$ sim [(km/s)$^2$]')
-            ax.legend(fontsize=8, loc='upper right')
-    print(f"velocileptors fitted s2fog = {float(dl['s2fog']):.4g} (Mpc/h)^2")
-    save(fig, 'diag_sigma_v_vs_velocileptors.png')
 
- 
+for key, fname in (('main', 'fig7b_grid_linear.png'), ('inner', 'fig7b_grid_linear_inner.png')):
+    if key in FIG7_SETS:
+        plot_fig7b(FIG7_SETS[key], fname)
+
 
 #%% Fig 8 -- 2D redshift-space xi^s(s_perp, s_los), mass bin 2: simulation vs skew-t model vs Gaussian (contours), skew-t residual map
 # Simulation: xi^s measured directly from the halo catalogs with Corrfunc (every phase, mean + phase scatter). Models: streaming
 # integral over the full real-space grid with the measured xi_hh(r) as the (1+xi) weight (build_paper_cache.py, section xi_s).
-LEVELS = [0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.8, 1.0]
+LEVELS = [0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5]
 S_MIN, S_MAX = 0.0, 40.0    # both axes span S_MIN -> S_MAX
 SMOOTH_SIGMA = 1.0      # Gaussian smoothing of the SIMULATION contour map only, in pixels (1 h^-1 Mpc); 0 = off. The residual map is unsmoothed.
 SIGMA_MODE = 'mean'     # residual normalisation: 'mean' = phase scatter / sqrt(N_phases) (error on the sim mean); 'single' = single-phase scatter
 RESID_LIM = 3.0
- 
+
 if 'xi_s' not in C:
     print('Fig 8: no cache section xi_s -- skipping')
 else:
@@ -597,7 +734,7 @@ else:
     e_perp, e_par = dx['s_perp_edges'], dx['s_par_edges']
     c_perp, c_par = 0.5 * (e_perp[1:] + e_perp[:-1]), 0.5 * (e_par[1:] + e_par[:-1])
     tr = lambda Z: Z.T                                   # (s_perp, s_par) -> plotted as (s_par rows, s_perp columns)
- 
+
     def diagonal_label_points(cs):
         """For each contour level, the vertex closest to the s_perp = s_los diagonal (levels that miss the plot are skipped)."""
         pts = []
@@ -607,13 +744,13 @@ else:
             if len(v):
                 pts.append(tuple(v[np.argmin(np.abs(v[:, 0] - v[:, 1]))]))
         return pts
- 
+
     def frame(ax):
         ax.set_xlim(S_MIN, S_MAX)
         ax.set_ylim(S_MIN, S_MAX)
         ax.set_xlabel(r'$s_\perp$ [$h^{-1}$ Mpc]')
         ax.set_ylabel(r'$s_{\rm los}$ [$h^{-1}$ Mpc]')
- 
+
     sim_map = gaussian_filter(dx['xi_sim'], SMOOTH_SIGMA, mode='nearest') if SMOOTH_SIGMA > 0 else dx['xi_sim']
     fig, ax = plt.subplots(figsize=(6.5, 6.5))
     for Z, col, ls, lw in ((sim_map, 'k', '-', 3.0), (dx['xi_skewt'], 'C0', '-', 1.8), (dx['xi_gauss'], 'C1', '--', 1.8)):
@@ -621,14 +758,13 @@ else:
         if col == 'k':
             ax.clabel(cs, manual=diagonal_label_points(cs), fmt='%g', fontsize=9, inline=True)
     frame(ax)
-    ax.legend(handles=[Line2D([], [], c='k', lw=3, label=r'\textsc{AbacusSummit} (stacked phases)'),
+    ax.legend(handles=[Line2D([], [], c='k', lw=3, label='simulation'),
                        Line2D([], [], c='C0', lw=1.8, label='Skew-t model'),
                        Line2D([], [], c='C1', lw=1.8, ls='--', label='Gaussian')],
               fontsize=9, loc='upper right')
-    ax.set_title(r'$\xi(s_\perp, s_{\rm los})$')
     fig.tight_layout()
     save(fig, 'fig8a_xi_s_contours.png')
- 
+
     sigma = dx['xi_sim_std'] / (np.sqrt(float(dx['n_phases'])) if SIGMA_MODE == 'mean' else 1.0)
     fig, axs = plt.subplots(1, 2, figsize=(12.5, 6.5), sharey=True, layout='constrained')
     for ax, key, title in zip(axs, ('xi_skewt', 'xi_gauss'), ('Skew-t model', 'Gaussian')):
@@ -639,9 +775,9 @@ else:
     axs[1].set_ylabel('')
     fig.colorbar(pm, ax=axs, location='top', label=r'$(\xi^s_{\rm model}-\langle\xi^s_{\rm sim}\rangle)/\sigma_\xi$')
     save(fig, 'fig8b_xi_s_residual.png')
- 
- 
- 
+
+
+
 #%% Fig 9 -- redshift-space multipoles xi_ell(s), ell = 0, 2, 4, out to s = 130: simulation vs skew-t (fit to ell = 0, 2) vs Gaussian
 # Simulation: direct pycorr measurement (mean over phases); the grey band is the SINGLE-phase scatter (std over phases).
 # Models (production streaming integral, LPT xi_real and v_r at the Fig 1 b1, b2): skew-t with all 13 parameters fit to the simulation
@@ -654,8 +790,8 @@ else:
     s_m, ells = dm['s'], [int(l) for l in dm['ells']]
     sim = dm['xi_sim_phases'].mean(axis=0)
     sig = dm['xi_sim_phases'].std(axis=0, ddof=1)                   # single-phase scatter
-    print(f"Fig 9: {int(dm['n_phases'])} phases; fit chi2 {float(df['chi2_default']):.0f} -> {float(df['chi2_fit']):.0f} "
-          f"for {int(df['dof'])} dof (s >= {float(df['fit_s_min']):g})")
+    print(f"Fig 9: {int(dm['n_phases'])} phases; fit chi2 {float(df['chi2_default']):.0f} -> {float(df['chi2_fit']):.0f}, "
+          f"N_data = {int(df['n_data'])}, N_par = {int(df['n_par'])}, p-value = {float(df['p_value']):.3g} (s >= {float(df['fit_s_min']):g})")
     fig, axs = plt.subplots(2, len(ells), figsize=(5.5 * len(ells), 8), sharex=True, layout='constrained',
                             gridspec_kw={'height_ratios': [3, 1.3]})
     for c, l in enumerate(ells):

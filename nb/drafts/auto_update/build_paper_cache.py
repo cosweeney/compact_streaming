@@ -72,8 +72,8 @@ K_XIS = 2                                    # mass bin for the xi^s maps / mult
 K_FIG7 = 2                                   # mass bin for Fig 7 (same as K_SINGLE)
 STRIDE = 3                                   # free-nu fits on every STRIDE-th R row and r_los column (fig5)
 HILL_BIN, HILL_MIN_BIN_PTS, HILL_MIN_BINS = 6.0, 10, 6
-FIG7_RP_SEL = [15.5, 30.5, 60.5]     # bin centres containing r = 15, 30, 60 h^-1 Mpc
-FIG7_RL_SEL = [15.5, 30.5, 60.5]
+FIG7_SETS = {'fig7': [15.5, 30.5, 60.5],        # r_perp = r_los selections (bin centres containing r = 15, 30, 60 h^-1 Mpc)
+             'fig7_inner': [5.5, 15.5, 45.5]}   # inner version: r = 5, 15, 45 (cache group auto/<key>)
 
 PARS = np.asarray(Config._MEAN_PARAMS, dtype=float)    # starting values for the Delta / nu fits
 
@@ -196,18 +196,18 @@ def fit_sigma_joint(sig):
 
 
 def fit_A_rho_per_R(sig, sigma0, sigma_rho):
-    A, Aerr = np.full(len(r_p), np.nan), np.full(len(r_p), np.nan)
+    """Per-r_perp amplitude A_rho with sigma0, sigma_rho held fixed (unweighted least squares)."""
+    A = np.full(len(r_p), np.nan)
     for j in range(len(r_p)):
         m = np.isfinite(sig[j]) & (sig[j] > SIG_FLOOR)
         if m.sum() < 5:
             continue
         try:
-            p, c = curve_fit(lambda xx, a: cm.sigma_mod(xx, sigma0, a, sigma_rho), x_grid[j][m], sig[j][m],
-                             p0=[0.5], bounds=(1e-4, 1.0), maxfev=5000)
-            A[j], Aerr[j] = p[0], np.sqrt(c[0, 0])
-        except RuntimeError:
+            A[j] = curve_fit(lambda xx, a: cm.sigma_mod(xx, sigma0, a, sigma_rho), x_grid[j][m], sig[j][m], p0=[0.5],
+                             bounds=(1e-4, 1.0), maxfev=5000)[0][0]
+        except (RuntimeError, ValueError):
             continue
-    return A, Aerr
+    return A
 
 
 def delta_2d(coords, A_delta0, r_delta, sigma_delta, beta_delta, alpha):
@@ -222,21 +222,20 @@ def fit_delta(x, R, D, p0):
 
 
 def fit_A_delta_per_R(D, dp):
-    A, Aerr = np.full(len(r_p), np.nan), np.full(len(r_p), np.nan)
+    """Per-r_perp amplitude A_Delta with the shape parameters dp[2:] held fixed (unweighted least squares)."""
+    A = np.full(len(r_p), np.nan)
     for j in range(len(r_p)):
         m = np.isfinite(D[j]) & (D[j] > DEL_FLOOR)
         if m.sum() < 5:
             continue
         try:
-            p, c = curve_fit(lambda xx, a: cm.delta_mod_alpha(xx, a, *dp[2:]), x_grid[j][m], D[j][m],
-                             p0=[dp[0]], maxfev=5000)
-            A[j], Aerr[j] = p[0], np.sqrt(c[0, 0])
-        except RuntimeError:
+            A[j] = curve_fit(lambda xx, a: cm.delta_mod_alpha(xx, a, *dp[2:]), x_grid[j][m], D[j][m], p0=[dp[0]], maxfev=5000)[0][0]
+        except (RuntimeError, ValueError):
             continue
-    return A, Aerr
+    return A
 
 
-def fit_hill2(r_pts, nu_pts):
+def fit_hill2(r_pts, nu_pts, return_medians=False):
     """(nu_0, r_c) of cm.nu_of_r, fit to per-r-bin medians of the free-nu values (soft-L1 in ln nu)."""
     edges = np.arange(r_pts.min(), r_pts.max() + HILL_BIN, HILL_BIN)
     ib = np.digitize(r_pts, edges) - 1
@@ -251,7 +250,7 @@ def fit_hill2(r_pts, nu_pts):
     rm, nm = np.array(rm), np.array(nm)
     sol = least_squares(lambda th: np.log(cm.nu_of_r(rm, *th)) - np.log(nm), PARS[9:11],
                         bounds=([2.01, 1.0], [1e3, 500.0]), loss='soft_l1', f_scale=0.1)
-    return sol.x
+    return (sol.x, rm, nm) if return_medians else sol.x
 
 
 # ------------------------------------------------------------------ LPT (b1, b2) fit, as in the nu-test script
@@ -357,27 +356,51 @@ def build_fig1(f):
             vr_model=model_vr(vr_r_ref[k], b1, b2)))
 
 
-def build_fig23(f):
-    sim = phases_for(K_SINGLE)[0]
-    h = PairHist.load(VR_AUTO_TMPL.format(sim=sim, k=K_SINGLE))
+def analyse_phase(sim, k):
+    """Everything Figs 2-4 show, for one phase: sigma_v grid, free-nu skew-t grid, Delta grid (free-nu xi minus the measured mean),
+    each phase's own joint sigma_v and Delta fits, and the per-r_perp amplitudes A_rho, A_Delta fit with that phase's shape parameters."""
+    h = PairHist.load(VR_AUTO_TMPL.format(sim=sim, k=k))
     sig = meas_sigv_grid(h, 0)
     vr_interp, _ = good_vr_interp(h)
-    mu_meas = vr_interp(r3_2d) * r_l_2d / r3_2d
-
-    sp = fit_sigma_joint(sig)
-    A_rho_R, A_rho_R_err = fit_A_rho_per_R(sig, sp[0], sp[3])
-
-    n_R = len(r_p)
-    ST = np.array(Parallel(n_jobs=-1, verbose=5)(
+    ST = np.array(Parallel(n_jobs=-1)(
         delayed(fit_skewt_row_free)(h.n[0][j], h.sum_v[0][j], h.sum_v2[0][j], h.counts[0][j], h.v_centers)
-        for j in range(n_R)))
-    Delta = ST[:, :, 0] - mu_meas                                  # free-nu calibration, as for the 11 parameters
-    dp = fit_delta(x_grid, np.broadcast_to(r_p[:, None], x_grid.shape), Delta, list(PARS[4:9]))
-    A_delta_R, A_delta_R_err = fit_A_delta_per_R(Delta, dp)
-    print(f'fig23 ({sim}, bin {K_SINGLE}): sigma pars {np.round(sp, 3)}, Delta pars {np.round(dp, 3)}')
-    put(f, 'auto/fig23', dict(sim=[sim], mass_bin=K_SINGLE, sig=sig, sig_params=sp, A_rho_R=A_rho_R,
-                              A_rho_R_err=A_rho_R_err, Delta=Delta, nu_free=ST[:, :, 3], del_params=dp,
-                              A_delta_R=A_delta_R, A_delta_R_err=A_delta_R_err))
+        for j in range(len(r_p))))
+    Delta = ST[:, :, 0] - vr_interp(r3_2d) * r_l_2d / r3_2d
+    out = dict(sig=sig, ST=ST, Delta=Delta, sp=None, dp=None, A_rho=np.full(len(r_p), np.nan), A_delta=np.full(len(r_p), np.nan))
+    try:
+        out['sp'] = fit_sigma_joint(sig)
+        out['A_rho'] = fit_A_rho_per_R(sig, out['sp'][0], out['sp'][3])
+        out['dp'] = fit_delta(x_grid, np.broadcast_to(r_p[:, None], x_grid.shape), Delta, list(PARS[4:9]))
+        out['A_delta'] = fit_A_delta_per_R(Delta, out['dp'])
+    except Exception as e:
+        print(f'fig23: {sim}: joint / amplitude fit failed ({type(e).__name__}: {e}) -- its amplitudes are NaN')
+    return out
+
+
+def build_fig23(f):
+    """Figs 2-4 for the FIRST phase of mass bin K_SINGLE; the amplitude error bars are the phase-to-phase scatter of the plotted
+    statistic: every phase is run through the same analysis (own joint fits, then per-r_perp amplitudes) and the error is the std over
+    phases (ddof=1) = what a single box would scatter by. Divide by sqrt(N_phases) for the error on the phase mean."""
+    sims = phases_for(K_SINGLE)
+    res = []
+    for n, s in enumerate(sims):
+        res.append(analyse_phase(s, K_SINGLE))
+        print(f'fig23: phase {n + 1}/{len(sims)} ({s}) done')
+    r0 = res[0]
+    if r0['sp'] is None or r0['dp'] is None:
+        raise RuntimeError('fig23: the first phase failed its joint fits')
+    A_rho_all, A_delta_all = np.array([r['A_rho'] for r in res]), np.array([r['A_delta'] for r in res])
+    scatter = lambda A: np.where(np.sum(np.isfinite(A), axis=0) >= 3, np.nanstd(A, axis=0, ddof=1), np.nan)
+    nu_free = r0['ST'][:, :, 3]
+    fin = np.isfinite(nu_free)
+    nu_hill, nu_med_r, nu_med = fit_hill2(r3_2d[fin], nu_free[fin], return_medians=True)   # hill2 (cm.nu_of_r) to per-r-bin medians
+    print(f'fig23 ({sims[0]}, bin {K_SINGLE}): sigma pars {np.round(r0["sp"], 3)}, Delta pars {np.round(r0["dp"], 3)}; '
+          f'median fractional amplitude scatter: A_rho {np.nanmedian(scatter(A_rho_all) / A_rho_all[0]):.3f}, '
+          f'A_delta {np.nanmedian(scatter(A_delta_all) / A_delta_all[0]):.3f}')
+    put(f, 'auto/fig23', dict(sim=[sims[0]], mass_bin=K_SINGLE, sig=r0['sig'], sig_params=r0['sp'], A_rho_R=A_rho_all[0],
+                              A_rho_R_err=scatter(A_rho_all), A_rho_R_phases=A_rho_all, Delta=r0['Delta'], nu_free=nu_free,
+                              nu_hill=nu_hill, nu_med_r=nu_med_r, nu_med=nu_med, del_params=r0['dp'], A_delta_R=A_delta_all[0],
+                              A_delta_R_err=scatter(A_delta_all), A_delta_R_phases=A_delta_all, n_phases_err=len(sims)))
 
 
 def fit_phase_bin(sim, k):
@@ -440,22 +463,26 @@ def load_stacked(sims, k):
 
 
 def build_fig7(f):
-    cells = sorted({(int(np.argmin(np.abs(r_p - rp))), int(np.argmin(np.abs(r_l - rl))))
-                    for rp in FIG7_RP_SEL for rl in FIG7_RL_SEL})
+    """One cache group per FIG7_SETS entry (3x3 grid of r_perp x r_los cells each). Every group also carries the MEASURED mean radial
+    velocity profile of the stacked phases (r_meas, vr_meas) next to the LPT one (r_tab, vr_model)."""
     r_tab = np.linspace(1.0, 200.0, 400)
     b1, b2 = f[f'auto/fig1/bin_{K_FIG7}/b1'][()], f[f'auto/fig1/bin_{K_FIG7}/b2'][()]
     sims = phases_for(K_FIG7)
     h = load_stacked(sims, K_FIG7)
-    g = dict(k=K_FIG7, n_phases=len(sims), r_tab=r_tab, vr_model=model_vr(r_tab, b1, b2))
-    for (j, i) in cells:
-        g[f'cell_{j}_{i}'] = dict(counts=h.counts[0][j, i], n=h.n[0][j, i])
-    put(f, 'auto/fig7', dict(rp_sel=np.array(FIG7_RP_SEL), rl_sel=np.array(FIG7_RL_SEL), v_centers=h.v_centers, bin=g))
+    r_eff, vr_m, _, npairs = vr_profile(h, 0, VR_R_EDGES)
+    good = np.isfinite(vr_m) & (npairs > 1000)
+    for name, sel in FIG7_SETS.items():
+        cells = sorted({(int(np.argmin(np.abs(r_p - rp))), int(np.argmin(np.abs(r_l - rl)))) for rp in sel for rl in sel})
+        g = dict(k=K_FIG7, n_phases=len(sims), r_tab=r_tab, vr_model=model_vr(r_tab, b1, b2), r_meas=r_eff[good], vr_meas=vr_m[good])
+        for (j, i) in cells:
+            g[f'cell_{j}_{i}'] = dict(counts=h.counts[0][j, i], n=h.n[0][j, i])
+        put(f, f'auto/{name}', dict(rp_sel=np.array(sel), rl_sel=np.array(sel), v_centers=h.v_centers, bin=g))
 
 
 def build_lpt_sigma(f):
     """<v_los^2> about ZERO (no mean subtracted): measured per cell, and the velocileptors prediction
-    conv^2 f^2 (s0 + P2(mu) s2) / (1 + xi), i.e. GetLPTInputs.pwv_variance without its `- v_r^2` term.
-    xi is compute_xi_real at the bin's (b1, b2), as in model_vr (not the Tukey-windowed xieft that pwv_variance uses)."""
+    conv^2 f^2 (s0 + P2(mu) s2) / (1 + xi), i.e. GetLPTInputs.pwv_variance without its `- v_r^2` term, plus the same with a fitted
+    constant s2fog. xi is compute_xi_real at the bin's (b1, b2), as in model_vr (not the Tukey-windowed xieft that pwv_variance uses)."""
     sim = phases_for(K_SINGLE)[0]
     h = PairHist.load(VR_AUTO_TMPL.format(sim=sim, k=K_SINGLE))
     n = h.n[0].astype(float)
@@ -485,8 +512,8 @@ def build_lpt_sigma(f):
           f'closed form vs velocileptors recompute: max rel diff {chk:.2e}')
 
     r_tab = np.linspace(1.0, 200.0, 400)
-    put(f, 'auto/lpt_sigma', dict(sim=[sim], mass_bin=K_SINGLE, b1=b1, b2=b2, m2_meas=m2_meas, m2_lpt=m2_lpt, m2_lpt_fit=m2_lpt_fit, s2fog=s2fog,
-                                  r_tab=r_tab, vr_model=model_vr(r_tab, b1, b2)))
+    put(f, 'auto/lpt_sigma', dict(sim=[sim], mass_bin=K_SINGLE, b1=b1, b2=b2, m2_meas=m2_meas, m2_lpt=m2_lpt, m2_lpt_fit=m2_lpt_fit,
+                                  s2fog=s2fog, r_tab=r_tab, vr_model=model_vr(r_tab, b1, b2)))
 
 
 XIS_DIRECT_TMPL = ('/spiffball/cosweeney/simulations/AbacusSummit_base/halos/'
@@ -613,6 +640,7 @@ def build_fit_multipoles(f):
     """Least-squares fit of the 13 parameters to the simulation xi_0 and xi_2 (phase mean) on FIT_S_MIN-FIT_S_MAX, with the
     SINGLE-PHASE scatter (std over phases) as the per-bin error. xi_4 is then a prediction. Default curves use the Fig 1 (b1, b2)
     and Config._MEAN_PARAMS; the Gaussian is never fit."""
+    from scipy.stats import chi2 as chi2_dist
     s_all = f['auto/multipoles/s'][()]
     phases = f['auto/multipoles/xi_sim_phases'][()]                      # (n_phases, 3, n_s)
     data, sig = phases.mean(axis=0), phases.std(axis=0, ddof=1)
@@ -626,19 +654,22 @@ def build_fit_multipoles(f):
         r = np.concatenate([(m[0] - data[0, sel]) / sig[0, sel], (m[1] - data[1, sel]) / sig[1, sel]])
         return np.nan_to_num(r, nan=1e3, posinf=1e3, neginf=-1e3)
 
+    n_data, n_par = 2 * len(s_fit), len(theta0)
     r0 = resid(theta0)
     print(f'fit_multipoles: {len(s_fit)} s points x 2 multipoles, start chi2 = {np.sum(r0**2):.1f}')
     res = least_squares(resid, np.clip(theta0, THETA_LB + 1e-6, THETA_UB - 1e-6), bounds=(THETA_LB, THETA_UB), x_scale='jac',
                         diff_step=1e-3, max_nfev=40, verbose=1)
-    dof = 2 * len(s_fit) - len(theta0)
-    print(f'fit_multipoles: chi2 {np.sum(r0**2):.1f} -> {np.sum(res.fun**2):.1f} (dof {dof}), success={res.success}')
+    chi2_0, chi2_1 = float(np.sum(r0**2)), float(np.sum(res.fun**2))
+    p_value = float(chi2_dist.sf(chi2_1, n_data - n_par))
+    print(f'fit_multipoles: chi2 {chi2_0:.1f} -> {chi2_1:.1f}; N_data = {n_data}, N_par = {n_par}, p-value = {p_value:.3g}; '
+          f'success={res.success}')
     for name, a0, a1 in zip(THETA_NAMES, theta0, res.x):
         print(f'   {name:12s} {a0:10.4g} -> {a1:10.4g}')
 
     out = {k: model_xi_ell(th, s_all, kind, N_MU_OUT, N_Y_OUT) for k, th, kind in
            (('xi_fit', res.x, 'skewt'), ('xi_default', theta0, 'skewt'), ('xi_gauss', theta0, 'gauss'))}
     put(f, 'auto/multipoles_fit', dict(s=s_all, theta_names=THETA_NAMES, theta_fit=res.x, theta_default=theta0,
-                                       chi2_default=float(np.sum(r0**2)), chi2_fit=float(np.sum(res.fun**2)), dof=dof,
+                                       chi2_default=chi2_0, chi2_fit=chi2_1, n_data=n_data, n_par=n_par, p_value=p_value,
                                        s_fit=s_fit, fit_s_min=FIT_S_MIN, success=bool(res.success), **out))
 
 

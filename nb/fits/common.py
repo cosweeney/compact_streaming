@@ -50,6 +50,10 @@ MU_REF = 0.5 * (_nodes + 1.0)
 W_MU = 0.5 * _wts
  
 COSMO_FID = [0.6777, 0.02214, 0.11891, 2.2e-9]
+# AP reference cosmology = the cosmology that turned the DESI redshifts into separations in h_ref^-1 Mpc: AbacusSummit c000 (the DESI fiducial).
+# Separate from COSMO_FID, which is only the sampler starting point (and sets LNAS_FID).
+AP_REF = (0.6736, 0.02237, 0.12)     # h, ombh2, omch2
+H_REF = AP_REF[0]
 OMBH2_MEAN, OMBH2_SIG = 0.02237, 0.00037
 LNAS_FID = np.log(1e10 * COSMO_FID[3])
 NS_FIXED = 0.9649   # fixed, matches GetLPTInputs / Planck '19; inert for background-only AP calls
@@ -70,7 +74,7 @@ def get_background(h, ombh2, omch2, ns):
     pars = camb.set_params(H0=100. * h, ombh2=ombh2, omch2=omch2, ns=ns)
     return camb.get_background(pars)
  
-RESULTS_FID = get_background(*COSMO_FID[:3], NS_FIXED)
+RESULTS_FID = get_background(*AP_REF, NS_FIXED)
  
  
 def load_emulators(z_eff):
@@ -89,8 +93,10 @@ def get_emulators_cached(z_eff):
  
 def ap_params(h, ombh2, omch2, ns, z_eff):
     results = get_background(h, ombh2, omch2, ns)
-    q_perp = results.angular_diameter_distance(z_eff) / RESULTS_FID.angular_diameter_distance(z_eff)
-    q_par = RESULTS_FID.hubble_parameter(z_eff) / results.hubble_parameter(z_eff)
+    # data separations are in H_REF^-1 Mpc and the model is in h^-1 Mpc at the sampled h, so the physical-distance ratios carry a factor h / H_REF
+    f = h / H_REF
+    q_perp = f * results.angular_diameter_distance(z_eff) / RESULTS_FID.angular_diameter_distance(z_eff)
+    q_par = f * RESULTS_FID.hubble_parameter(z_eff) / results.hubble_parameter(z_eff)
     return q_perp, q_par
  
 def apply_AP(s_fid, mu_fid, q_perp, q_par):
