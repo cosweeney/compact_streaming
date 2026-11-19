@@ -1,0 +1,100 @@
+diff --git a/compact/linear.py b/compact/linear.py
+new file mode 100644
+index 0000000..d7b9a4f
+--- /dev/null
++++ b/compact/linear.py
+@@ -0,0 +1,41 @@
++"""
++Linear-theory ingredients that tie sigma_0 to sigma_{v,lin} (the 11par_v3 model):
++
++    sigma_0^2 = A_sigma * sigma_{v,lin}^2,
++    sigma_{v,lin}^2 = (f a H / h)^2 / (6 pi^2) * int dk P_cb(k, z)      [km/s]^2
++
++with P_cb the CDM + baryon linear power spectrum, f = f sigma_8 / sigma_8 from CAMB, and a H / h in km/s per
++h^-1 Mpc. The same two functions are used by the model (compact.lpt.GetLPTInputs) and by the calibration, so
++A_sigma means the same thing in both. CAMB is called exactly as GetLPTInputs calls it: only (H0, ombh2, omch2,
++As, ns) are set; everything else is a CAMB default.
++"""
++import numpy as np
++import camb
++from scipy.integrate import simpson
++
++KMIN, KMAX, NK = 1e-4, 20.0, 1024      # h/Mpc; the P(k) grid of GetLPTInputs.get_pklin_gsm
++
++
++def camb_results(h, ombh2, omch2, As, ns, redshifts, kmax=KMAX):
++    """CAMB results with the linear matter power spectrum at `redshifts` (same call as GetLPTInputs)."""
++    pars = camb.set_params(H0=100.0 * h, ombh2=ombh2, omch2=omch2, As=As, ns=ns)
++    pars.NonLinear = camb.model.NonLinear_none
++    pars.set_matter_power(redshifts=list(redshifts), kmax=2.0 * kmax * h)
++    return camb.get_results(pars)
++
++
++def growth_rate(results, z):
++    """f(z) = f sigma_8 / sigma_8 from CAMB (get_fsigma8 and get_sigma8 use the order of the transfer redshifts)."""
++    tr = results.Params.Transfer
++    zs = np.asarray(tr.PK_redshifts[:tr.PK_num_redshifts])
++    i = int(np.argmin(np.abs(zs - z)))
++    return float(results.get_fsigma8()[i] / results.get_sigma8()[i])
++
++
++def sigma_v_lin(results, z, h):
++    """1-D linear velocity dispersion [km/s] at redshift z (which must be one of the redshifts given to CAMB)."""
++    k, zs, pk = results.get_matter_power_spectrum(minkh=KMIN, maxkh=KMAX, npoints=NK,
++                                                  var1='delta_nonu', var2='delta_nonu')
++    pk = pk[int(np.argmin(np.abs(np.asarray(zs) - z)))]          # P(k) is returned in ascending z
++    aH_over_h = results.hubble_parameter(z) / (1.0 + z) / h
++    return growth_rate(results, z) * aH_over_h * np.sqrt(simpson(pk, x=k) / (6.0 * np.pi**2))
+diff --git a/compact/lpt.py b/compact/lpt.py
+index 025e090..03d674d 100644
+--- a/compact/lpt.py
++++ b/compact/lpt.py
+@@ -5,6 +5,7 @@ import numpy as np
+ import camb
+ from colossus.cosmology import cosmology
+ from velocileptors.LPT.gaussian_streaming_model_fftw import GaussianStreamingModel
++from compact.linear import sigma_v_lin as _sigma_v_lin
+ 
+ 
+ class GetLPTInputs:
+@@ -53,6 +54,10 @@ class GetLPTInputs:
+         self.Plin = None
+         self.gsm = None
+ 
++    def sigma_v_lin(self):
++        # 1-D linear velocity dispersion [km/s] (CDM+baryon P(k), CAMB's f; see compact/linear.py)
++        return _sigma_v_lin(self.results, self.redshift, self.h)
++
+     def get_pklin_gsm(self, kmin = 1e-4, kmax=20.0, nk=1024):
+         # k in h/Mpc, P in (Mpc/h)^3, at self.redshift
+         k, _, pk = self.results.get_matter_power_spectrum(
+diff --git a/compact/predictions.py b/compact/predictions.py
+index dbba6ce..df7b478 100644
+--- a/compact/predictions.py
++++ b/compact/predictions.py
+@@ -46,11 +46,14 @@ class CompactStreamingModel:
+     def _lpt_inputs(self, cosmo, bias):
+         lpt_pars = np.concatenate((bias, np.zeros(7)))
+         gli = GetLPTInputs(self.z, cosmo, lpt_pars, exact_growth=self.exact_growth)
++        # sigma_{v,lin} is only needed when the config's row 0 is A_sigma (sigma_0^2 = A_sigma sigma_{v,lin}^2)
++        sigma_lin = gli.sigma_v_lin() if getattr(self.cfg, 'sigma0_from_linear', False) else None
+ 
++        # conv must stay last: _pdf and the Gaussian generators read it as lpt[-1]
+         self._lpt = (gli.xi_real(self.cfg.r_lpt, lpt_pars),
+                      gli.pwv_mean(self.cfg.r_lpt, lpt_pars),
+                      gli.f, gli.H,
+-                     gli.D_A, gli.conv)
++                     gli.D_A, sigma_lin, gli.conv)
+ 
+         return self._lpt
+ 
+@@ -151,6 +154,9 @@ class CompactStreamingModel:
+         queried cosmology and mass_bin scheme."""
+         mean = UnivariateSpline(self.cfg.r_lpt, lpt[1], s=0)
+         params = self._compact_params(cosmo, mass_bin=mass_bin, interp_scheme=interp_scheme)
++        if getattr(self.cfg, 'sigma0_from_linear', False):
++            params = np.array(params, dtype=float)
++            params[0] = np.sqrt(max(params[0], 0.0)) * lpt[-2]       # row 0 is A_sigma: sigma_0 = sqrt(A_sigma) sigma_{v,lin}
+         conv = lpt[-1]
+ 
+         return lambda v, rp, rl: Pv_compact(v, rp, rl, mean, params,

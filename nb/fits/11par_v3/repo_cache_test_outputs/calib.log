@@ -1,0 +1,22 @@
+sigma_v,lin for 52 sims x 8 redshifts (0 to compute, rest from /tmp/v3_test/sigma_lin_cache_11par_v3.json) ...
+A_sigma over all fits: median 1.1751, 5-95%: 1.0301-1.3066
+
+check: does this fit-results file reproduce the baseline sigma_0 emulator in compact/config.py?
+  low_M: max relative coefficient difference 3.3e-08; z nodes differing by > 1e-4: none
+  high_M: max relative coefficient difference 6.7e-01; z nodes differing by > 1e-4: {np.float64(0.2): '3.8e-03', np.float64(0.3): '1.4e-02', np.float64(0.4): '2.7e-02', np.float64(0.5): '5.1e-02', np.float64(0.8): '1.6e-01', np.float64(1.1): '6.7e-01'}
+  WARNING: the baseline config.py was not built from exactly this file for the nodes listed above; check that --fit-results points at the file the current emulator came from before using the outputs.
+
+A_sigma: high-M above z = 0.5 = low-M + mean shift [ 0.0154 -1.3047  0.6241  0.012   0.0643] (intercept, 4 slopes)
+  z    bin0 intercept   high-M intercept (raw -> used)   avg intercept
+  0.2    1.1360          1.1501 ->   1.1501           1.1431
+  0.3    1.1441          1.1584 ->   1.1584           1.1512
+  0.4    1.1474          1.1626 ->   1.1626           1.1550
+  0.5    1.1519          1.1699 ->   1.1699           1.1609
+  0.8    1.1640          1.1982 ->   1.1794           1.1717
+  1.1    1.1756          1.2770 ->   1.1910           1.1833
+  1.4    1.1862             nan ->   1.2016           1.1939
+  1.7    1.1970             nan ->   1.2124           1.2047
+
+wrote /tmp/v3_test/config_11par_v3.py
+wrote /tmp/v3_test/cosmo_emulator_params_11par_v3.h5
+wrote A_sigma_calibration_11par_v3.png

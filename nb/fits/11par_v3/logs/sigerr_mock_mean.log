@@ -1,0 +1,51 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1794799949.320634 1937716 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1794799949.322170 1937716 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1794799950.646179 1937716 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1794799950.647006 1937716 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] starting: ndim=8, nwalkers=24, ncores=4
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 1000: tau_max=88, N/tau_max=11, long_enough=False, stable=False, 1.8 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 2000: tau_max=150, N/tau_max=13, long_enough=False, stable=False, 3.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 3000: tau_max=191, N/tau_max=16, long_enough=False, stable=False, 5.4 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 4000: tau_max=243, N/tau_max=16, long_enough=False, stable=False, 7.2 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 5000: tau_max=284, N/tau_max=18, long_enough=False, stable=False, 9.0 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 6000: tau_max=298, N/tau_max=20, long_enough=False, stable=False, 10.8 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 7000: tau_max=332, N/tau_max=21, long_enough=False, stable=False, 12.7 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 8000: tau_max=355, N/tau_max=23, long_enough=False, stable=True, 14.5 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 9000: tau_max=382, N/tau_max=24, long_enough=False, stable=False, 16.3 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 10000: tau_max=421, N/tau_max=24, long_enough=False, stable=False, 18.2 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 11000: tau_max=426, N/tau_max=26, long_enough=False, stable=True, 20.0 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 12000: tau_max=420, N/tau_max=29, long_enough=False, stable=True, 21.9 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 13000: tau_max=421, N/tau_max=31, long_enough=False, stable=True, 23.8 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 14000: tau_max=425, N/tau_max=33, long_enough=False, stable=False, 25.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 15000: tau_max=413, N/tau_max=36, long_enough=False, stable=True, 27.4 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 16000: tau_max=405, N/tau_max=40, long_enough=False, stable=True, 29.3 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 17000: tau_max=402, N/tau_max=42, long_enough=False, stable=True, 31.2 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 18000: tau_max=408, N/tau_max=44, long_enough=False, stable=True, 33.1 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 19000: tau_max=423, N/tau_max=45, long_enough=False, stable=True, 35.0 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 20000: tau_max=415, N/tau_max=48, long_enough=False, stable=True, 36.9 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 21000: tau_max=413, N/tau_max=51, long_enough=False, stable=True, 38.8 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 22000: tau_max=422, N/tau_max=52, long_enough=False, stable=True, 40.7 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 23000: tau_max=432, N/tau_max=53, long_enough=False, stable=True, 42.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 24000: tau_max=430, N/tau_max=56, long_enough=False, stable=True, 44.5 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 25000: tau_max=426, N/tau_max=59, long_enough=False, stable=True, 46.4 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 26000: tau_max=425, N/tau_max=61, long_enough=False, stable=True, 48.3 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 27000: tau_max=422, N/tau_max=64, long_enough=False, stable=True, 50.2 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 28000: tau_max=441, N/tau_max=63, long_enough=False, stable=True, 52.1 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 29000: tau_max=446, N/tau_max=65, long_enough=False, stable=True, 54.0 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 30000: tau_max=440, N/tau_max=68, long_enough=False, stable=True, 55.9 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 31000: tau_max=435, N/tau_max=71, long_enough=False, stable=True, 57.8 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 32000: tau_max=429, N/tau_max=75, long_enough=False, stable=True, 59.7 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 33000: tau_max=424, N/tau_max=78, long_enough=False, stable=True, 61.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 34000: tau_max=419, N/tau_max=81, long_enough=False, stable=True, 63.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 35000: tau_max=418, N/tau_max=84, long_enough=False, stable=True, 65.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 36000: tau_max=425, N/tau_max=85, long_enough=False, stable=True, 67.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 37000: tau_max=424, N/tau_max=87, long_enough=False, stable=True, 69.5 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 38000: tau_max=432, N/tau_max=88, long_enough=False, stable=True, 71.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 39000: tau_max=428, N/tau_max=91, long_enough=False, stable=True, 73.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 40000: tau_max=428, N/tau_max=93, long_enough=False, stable=True, 75.7 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 41000: tau_max=432, N/tau_max=95, long_enough=False, stable=True, 77.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 42000: tau_max=435, N/tau_max=96, long_enough=False, stable=True, 79.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] step 43000: tau_max=439, N/tau_max=98, long_enough=False, stable=True, 81.6 min
+[compact_v3_noslope_mean_indiv_QSO_sigerr_smin25] CONVERGED at step 43700: tau_max=437, N/tau_max=100 -> /spiffball/cosweeney/data/chains/fits_11par_apfix_v2_v3/compact_v3_noslope/compact_v3_noslope_mean_indiv_QSO_sigerr_smin25.txt
