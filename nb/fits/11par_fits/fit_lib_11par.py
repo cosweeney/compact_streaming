@@ -39,10 +39,10 @@ import psutil
 sys.path.insert(1, str(Path(__file__).resolve().parent.parent))   # finds nb/fits/common.py when run from a subfolder
 from common import (COSMO_FID, LNAS_FID, NS_FIXED, NS_MEAN, NS_SIG, OMBH2_MEAN, OMBH2_SIG,
                     TRACERS, ZBINS, Z_EFF, SMAX_FIT, NBINS_COV, ELL_ALL, ELLS_FIT,
-                    get_background, RESULTS_FID, ap_multipoles, load_tracer_arrays, data_vec_from,
+                    get_background, RESULTS_FID, H_REF, ap_multipoles, load_tracer_arrays, data_vec_from,
                     poles_path_for, cov_path_for, save_getdist_chain, PARAM_NAMES_7, PARAM_LABELS_7, Emulator)
 
-NICE = 19
+NICE = 10
 
 
 def lower_priority():
@@ -141,6 +141,9 @@ def build_specs():
         for i in range(g * MOCKS_PER_SMIN, min((g + 1) * MOCKS_PER_SMIN, n_common)):
             add(f'compact_mock{i:02d}_joint_smin{smin}', 'compact', 'mock_single', 'joint', FIT_KEYS, smin,
                 mock_idx=i, priority=1)
+    # every common mock also at s_min = 20 (mocks 0-4 already have it from the loop above): for characterizing parameter shifts with all mocks
+    for i in range(MOCKS_PER_SMIN, n_common):
+        add(f'compact_mock{i:02d}_joint_smin20', 'compact', 'mock_single', 'joint', FIT_KEYS, 20, mock_idx=i, priority=1)
     return specs
 
 
@@ -224,7 +227,8 @@ _H_FID = {z: RESULTS_FID.hubble_parameter(z) for z in set(Z_EFF.values())}
 def ap_multi(h, ombh2, omch2, ns, z_effs):
     """(q_perp, q_par) for every z in z_effs from ONE CAMB background call."""
     r = get_background(h, ombh2, omch2, ns)
-    return [(r.angular_diameter_distance(z) / _DA_FID[z], _H_FID[z] / r.hubble_parameter(z)) for z in z_effs]
+    f = h / H_REF     # data in H_REF^-1 Mpc, model in h^-1 Mpc at the sampled h (see common.ap_params)
+    return [(f * r.angular_diameter_distance(z) / _DA_FID[z], f * _H_FID[z] / r.hubble_parameter(z)) for z in z_effs]
 
 
 def model_one(emus, emu_params, s_data, W, q_perp, q_par):

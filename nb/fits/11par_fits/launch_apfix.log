@@ -1,0 +1,10 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793139864.076080 3033376 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1793139864.077535 3033376 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793139865.328222 3033376 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1793139865.329144 3033376 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: 24 mocks are common to all tracers, expected 25
+shift not available yet: only 24 single-mock fits have a status.json (expected 25)
+skipping 4 shift fits until the single-mock fits have converged (rerun launch then): ['compact_shift_dr1_joint_smin20', 'compact_shiftsys_dr1_joint_smin20', 'compact_shift_mean_joint_smin20', 'compact_shiftsys_mean_joint_smin20']
+0 fits to run (65 already converged), core budget 100

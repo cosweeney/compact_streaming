@@ -1,0 +1,25 @@
+nohup: ignoring input
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792983019.646673 2944920 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792983019.648434 2944920 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792983021.249679 2944920 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792983021.250790 2944920 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: 24 mocks are common to all tracers, expected 25
+8 fits to run (0 already converged), core budget 32
+19:50:22 started compact_flatprior_dr1_joint_smin20 (4 cores; 4/32 used)
+19:50:22 started compact_flatprior_mean_joint_smin20 (4 cores; 8/32 used)
+19:50:22 started compact_dr1_joint_noBGS_smin20 (4 cores; 12/32 used)
+19:50:22 started compact_dr1_joint_noLRG1_smin20 (4 cores; 16/32 used)
+19:50:22 started compact_dr1_joint_noLRG2_smin20 (4 cores; 20/32 used)
+19:50:22 started compact_dr1_joint_noLRG3_smin20 (4 cores; 24/32 used)
+19:50:22 started compact_dr1_joint_noELG2_smin20 (4 cores; 28/32 used)
+19:50:22 started compact_dr1_joint_noQSO_smin20 (4 cores; 32/32 used)
+23:11:32 finished compact_dr1_joint_noQSO_smin20 (rc=0); 0 pending, 7 running
+23:25:22 finished compact_dr1_joint_noLRG1_smin20 (rc=0); 0 pending, 6 running
+00:13:02 finished compact_dr1_joint_noELG2_smin20 (rc=0); 0 pending, 5 running
+00:30:12 finished compact_dr1_joint_noLRG3_smin20 (rc=0); 0 pending, 4 running
+01:21:02 finished compact_flatprior_dr1_joint_smin20 (rc=0); 0 pending, 3 running
+01:22:02 finished compact_dr1_joint_noBGS_smin20 (rc=0); 0 pending, 2 running
+01:33:22 finished compact_dr1_joint_noLRG2_smin20 (rc=0); 0 pending, 1 running
+02:00:32 finished compact_flatprior_mean_joint_smin20 (rc=0); 0 pending, 0 running

@@ -1,0 +1,14 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792709994.077326  691450 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792709994.080966  691450 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792709996.742641  691450 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792709996.744624  691450 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+AP fix active: reference = c000 (0.6736, 0.02237, 0.12), h/h_fid factor on; q = 1 at c000 (z = 0.295)
+walkers start around the baseline chain: h = 0.6826 +- 0.0032
+[compact_dr1_joint_smin20_apfix] resuming at step 4000: ndim=17, nwalkers=52, ncores=24
+[compact_dr1_joint_smin20_apfix] step 5000: tau_max=219, N/tau_max=23, long_enough=False, stable=False, 4.8 min
+[compact_dr1_joint_smin20_apfix] step 6000: tau_max=239, N/tau_max=25, long_enough=False, stable=False, 6.6 min
+[compact_dr1_joint_smin20_apfix] step 7000: tau_max=257, N/tau_max=27, long_enough=False, stable=False, 8.4 min
+[compact_dr1_joint_smin20_apfix] step 8000: tau_max=259, N/tau_max=31, long_enough=False, stable=False, 10.2 min
+[compact_dr1_joint_smin20_apfix] NOT CONVERGED (hit max_steps) at step 8000: tau_max=259, N/tau_max=31 -> /spiffball/cosweeney/data/chains/fits_11par/compact_apfix/compact_dr1_joint_smin20_apfix.txt

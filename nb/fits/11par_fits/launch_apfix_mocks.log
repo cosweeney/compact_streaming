@@ -1,0 +1,95 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793144868.436572 3038619 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1793144868.438014 3038619 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793144869.672217 3038619 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1793144869.673008 3038619 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+shift not available yet: only 0 single-mock fits have a status.json (expected 25)
+skipping 4 shift fits until the single-mock fits have converged (rerun launch then): ['compact_shift_dr1_joint_smin20', 'compact_shiftsys_dr1_joint_smin20', 'compact_shift_mean_joint_smin20', 'compact_shiftsys_mean_joint_smin20']
+43 fits to run (23 already converged), core budget 110
+16:47:50 started compact_mean_joint_smin20 (4 cores; 4/110 used)
+16:47:50 started compact_mean_joint_smin25 (4 cores; 8/110 used)
+16:47:50 started compact_mean_joint_smin30 (4 cores; 12/110 used)
+16:47:50 started compact_mean_joint_smin35 (4 cores; 16/110 used)
+16:47:50 started compact_mean_joint_smin40 (4 cores; 20/110 used)
+16:47:50 started compact_lowM_mean_joint_smin20 (4 cores; 24/110 used)
+16:47:50 started compact_highM_mean_joint_smin20 (4 cores; 28/110 used)
+16:47:50 started gauss_mean_joint_smin20 (4 cores; 32/110 used)
+16:47:50 started compact_mean_indiv_BGS_BRIGHT-21.5_0.1-0.4_smin20 (1 cores; 33/110 used)
+16:47:50 started compact_mean_indiv_LRG_0.4-0.6_smin20 (1 cores; 34/110 used)
+16:47:50 started compact_mean_indiv_LRG_0.6-0.8_smin20 (1 cores; 35/110 used)
+16:47:50 started compact_mean_indiv_LRG_0.8-1.1_smin20 (1 cores; 36/110 used)
+16:47:50 started compact_mean_indiv_ELG_LOPnotqso_1.1-1.6_smin20 (1 cores; 37/110 used)
+16:47:50 started compact_mean_indiv_QSO_0.8-2.1_smin20 (1 cores; 38/110 used)
+16:47:50 started compact_mean_joint_avgcov_smin20 (4 cores; 42/110 used)
+16:47:50 started compact_w0wa_mean_joint_smin20 (4 cores; 46/110 used)
+16:47:50 started compact_w0wa_mean_joint_smin30 (4 cores; 50/110 used)
+16:47:50 started compact_flatprior_mean_joint_smin20 (4 cores; 54/110 used)
+16:47:50 started compact_mock00_joint_smin20 (4 cores; 58/110 used)
+16:47:50 started compact_mock01_joint_smin20 (4 cores; 62/110 used)
+16:47:50 started compact_mock02_joint_smin20 (4 cores; 66/110 used)
+16:47:50 started compact_mock03_joint_smin20 (4 cores; 70/110 used)
+16:47:50 started compact_mock04_joint_smin20 (4 cores; 74/110 used)
+16:47:50 started compact_mock05_joint_smin20 (4 cores; 78/110 used)
+16:47:50 started compact_mock06_joint_smin20 (4 cores; 82/110 used)
+16:47:50 started compact_mock07_joint_smin20 (4 cores; 86/110 used)
+16:47:50 started compact_mock08_joint_smin20 (4 cores; 90/110 used)
+16:47:50 started compact_mock09_joint_smin20 (4 cores; 94/110 used)
+16:47:50 started compact_mock10_joint_smin20 (4 cores; 98/110 used)
+16:47:50 started compact_mock11_joint_smin20 (4 cores; 102/110 used)
+16:47:50 started compact_mock12_joint_smin20 (4 cores; 106/110 used)
+16:47:50 started compact_mock13_joint_smin20 (4 cores; 110/110 used)
+18:55:30 finished compact_mean_indiv_QSO_0.8-2.1_smin20 (rc=0); 11 pending, 31 running
+19:08:20 finished compact_mean_indiv_LRG_0.6-0.8_smin20 (rc=0); 11 pending, 30 running
+19:17:10 finished compact_mean_indiv_LRG_0.8-1.1_smin20 (rc=0); 11 pending, 29 running
+19:31:00 finished compact_mean_indiv_LRG_0.4-0.6_smin20 (rc=0); 11 pending, 28 running
+19:31:00 started compact_mock14_joint_smin20 (4 cores; 110/110 used)
+19:31:20 finished compact_mean_indiv_ELG_LOPnotqso_1.1-1.6_smin20 (rc=0); 10 pending, 28 running
+19:59:00 finished compact_mean_indiv_BGS_BRIGHT-21.5_0.1-0.4_smin20 (rc=0); 10 pending, 27 running
+23:33:51 finished compact_mean_joint_smin30 (rc=0); 10 pending, 26 running
+23:33:51 started compact_mock15_joint_smin20 (4 cores; 108/110 used)
+23:34:51 finished compact_mean_joint_smin35 (rc=0); 9 pending, 26 running
+23:34:51 started compact_mock16_joint_smin20 (4 cores; 108/110 used)
+23:48:11 finished compact_mean_joint_smin40 (rc=0); 8 pending, 26 running
+23:48:11 started compact_mock17_joint_smin20 (4 cores; 108/110 used)
+00:16:11 finished compact_mean_joint_smin25 (rc=0); 7 pending, 26 running
+00:16:11 started compact_mock18_joint_smin20 (4 cores; 108/110 used)
+00:55:21 finished compact_mock11_joint_smin20 (rc=0); 6 pending, 26 running
+00:55:21 started compact_mock19_joint_smin20 (4 cores; 108/110 used)
+01:08:21 finished compact_mock01_joint_smin20 (rc=0); 5 pending, 26 running
+01:08:21 started compact_mock20_joint_smin20 (4 cores; 108/110 used)
+01:29:41 finished compact_mock00_joint_smin20 (rc=0); 4 pending, 26 running
+01:29:41 started compact_mock21_joint_smin20 (4 cores; 108/110 used)
+01:54:01 finished compact_flatprior_mean_joint_smin20 (rc=0); 3 pending, 26 running
+01:54:01 started compact_mock22_joint_smin20 (4 cores; 108/110 used)
+01:57:31 finished compact_mock03_joint_smin20 (rc=0); 2 pending, 26 running
+01:57:31 started compact_mock23_joint_smin20 (4 cores; 108/110 used)
+02:35:31 finished compact_mock05_joint_smin20 (rc=0); 1 pending, 26 running
+02:35:31 started compact_mock24_joint_smin20 (4 cores; 108/110 used)
+02:45:51 finished compact_mock02_joint_smin20 (rc=0); 0 pending, 26 running
+02:57:11 finished compact_lowM_mean_joint_smin20 (rc=0); 0 pending, 25 running
+03:05:21 finished compact_mock12_joint_smin20 (rc=0); 0 pending, 24 running
+03:19:01 finished compact_mock07_joint_smin20 (rc=0); 0 pending, 23 running
+03:29:41 finished gauss_mean_joint_smin20 (rc=0); 0 pending, 22 running
+03:46:11 finished compact_mock08_joint_smin20 (rc=0); 0 pending, 21 running
+03:56:21 finished compact_mock06_joint_smin20 (rc=0); 0 pending, 20 running
+04:12:41 finished compact_mean_joint_smin20 (rc=0); 0 pending, 19 running
+04:27:11 finished compact_mock04_joint_smin20 (rc=0); 0 pending, 18 running
+04:28:21 finished compact_w0wa_mean_joint_smin30 (rc=0); 0 pending, 17 running
+04:42:31 finished compact_mock14_joint_smin20 (rc=0); 0 pending, 16 running
+04:52:41 finished compact_mock13_joint_smin20 (rc=0); 0 pending, 15 running
+05:41:51 finished compact_mock09_joint_smin20 (rc=0); 0 pending, 14 running
+06:03:11 finished compact_mock10_joint_smin20 (rc=0); 0 pending, 13 running
+06:09:21 finished compact_highM_mean_joint_smin20 (rc=0); 0 pending, 12 running
+07:32:11 finished compact_mock17_joint_smin20 (rc=0); 0 pending, 11 running
+07:33:31 finished compact_w0wa_mean_joint_smin20 (rc=0); 0 pending, 10 running
+07:40:41 finished compact_mock21_joint_smin20 (rc=0); 0 pending, 9 running
+08:14:12 finished compact_mock19_joint_smin20 (rc=0); 0 pending, 8 running
+08:19:22 finished compact_mock23_joint_smin20 (rc=0); 0 pending, 7 running
+08:32:32 finished compact_mock16_joint_smin20 (rc=0); 0 pending, 6 running
+08:46:12 finished compact_mock20_joint_smin20 (rc=0); 0 pending, 5 running
+09:03:42 finished compact_mock18_joint_smin20 (rc=0); 0 pending, 4 running
+09:56:32 finished compact_mock24_joint_smin20 (rc=0); 0 pending, 3 running
+10:06:52 finished compact_mock15_joint_smin20 (rc=0); 0 pending, 2 running
+10:27:32 finished compact_mock22_joint_smin20 (rc=0); 0 pending, 1 running
+14:20:28 finished compact_mean_joint_avgcov_smin20 (rc=0); 0 pending, 0 running

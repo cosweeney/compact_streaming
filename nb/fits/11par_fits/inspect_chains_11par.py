@@ -262,11 +262,31 @@ def validation_figure(name, save=True):
     tot_chi2, tot_n = sum(r[2] for r in chi2_rows), sum(r[1] for r in chi2_rows)
     print(f'{name}: MAP ln P = {lp_max:.2f}; chi2/n_data per tracer: ' +
           ', '.join(f'{t} {c:.1f}/{k}' for t, k, c in chi2_rows) + f'; total {tot_chi2:.1f}/{tot_n}')
+    return chi2_rows, lp_max
 
 
 for case in BASELINE.values():
     for name in case.values():
         validation_figure(name)
+
+#%% [markdown]
+# ### 3b. Validation: mean-of-mocks fit with the averaged covariance
+# Same figure as above for `compact_mean_joint_avgcov_smin20`, whose covariance is the single-mock covariance divided by the number of mocks, so
+# the error bars are ~5x smaller and a perfect model would give chi2/dof ~ 1; an excess measures the model systematic in units of the noise of
+# the mean of the mocks.
+
+#%%
+from scipy.stats import chi2 as chi2_dist
+
+AVGCOV_NAME = 'compact_mean_joint_avgcov_smin20'
+if AVGCOV_NAME not in INFO:
+    print(f'{AVGCOV_NAME}: chain not found')
+else:
+    avg_rows, avg_lp = validation_figure(AVGCOV_NAME)
+    n_tot, chi2_tot = sum(r[1] for r in avg_rows), sum(r[2] for r in avg_rows)
+    dof_tot = n_tot - (5 + 2 * len(avg_rows))
+    print(f'averaged-covariance fit: total chi2 = {chi2_tot:.1f} for {dof_tot} dof -> chi2/dof = {chi2_tot / dof_tot:.2f}, '
+          f'p = {chi2_dist.sf(chi2_tot, dof_tot):.3g}; expected spread of chi2/dof for a perfect model: +-{np.sqrt(2 / dof_tot):.2f}')
 
 #%% [markdown]
 # ## 4. Marginalized cosmology posteriors of the baseline fits, with DESI DR1 2024 full-shape contours (black, unfilled)
@@ -276,7 +296,7 @@ for case in BASELINE.values():
 
 #%%
 PARAMS = ['omch2', 'ombh2', 'H0', 'logA', 'ns']
-LABELS = [r'\Omega_c h^2', r'\Omega_b h^2', 'H_0', r'\ln(10^{10}A_s)', 'n_s']
+LABELS = [r'\Omega_c h^2', r'\Omega_b h^2', r'H_0\ [{\rm km\,s^{-1}\,Mpc^{-1}}]', r'\ln(10^{10}A_s)', 'n_s']
 
 def cosmo_samples(name, label):
     info = INFO[name]
@@ -312,26 +332,114 @@ for case, models in BASELINE.items():
         g.export(str(PLOT_DIR / f'posteriors_{case}_baseline{suffix}.png'))
         plt.show()
 
-
 #%% [markdown]
 # ### 4b. Compact DR1 fits and the DESI DR1 2024 chains only
-# Unfilled contours: the compact joint fits to DR1 at each s_min (20, 40) with the DESI DR1 2024 full-shape contours in black.
- 
+# Unfilled contours: the baseline (s_min = 20) compact joint fit to DR1 with the DESI DR1 2024 full-shape contours in black.
 
 #%%
 dr1_names = {s: f'compact_dr1_joint_smin{s}' for s in (20,) if f'compact_dr1_joint_smin{s}' in INFO}
 if not dr1_names:
     print('no compact DR1 joint chains found')
 else:
-    dr1_color = {20: 'tab:blue'}
+    dr1_color = {20: 'tab:red'}
     samples = [cosmo_samples(n, rf'Compact, DR1, $s_{{\rm min}}={s}$') for s, n in dr1_names.items()] + [desi]
     g = plots.get_subplot_plotter()
-    g.triangle_plot(samples, params=PARAMS, filled=False,
+    g.triangle_plot(samples, params=PARAMS, filled=[True]*len(dr1_names)+[False],
                     contour_colors=[dr1_color[s] for s in dr1_names] + ['k'], contour_lws=[1.3] * len(dr1_names) + [1.4],
                     legend_labels=[sm.getLabel() for sm in samples[:-1]] + [r'DESI DR1 2024 full-shape'])
     g.export(str(PLOT_DIR / 'posteriors_dr1_compact_vs_desi.pdf'))
     g.export(str(PLOT_DIR / 'posteriors_dr1_compact_vs_desi.png'))
     plt.show()
+
+#%% [markdown]
+# ### 4c. Sweeney & Rozo model (AP-fixed fit) vs DESI DR1 full-shape: H_0 against Omega_m, omega_m and omega_c
+# Three single-panel figures with H_0 on the y axis and, on the x axis, Omega_m (= (omega_b + omega_cdm)/h^2), omega_m (= omega_b + omega_cdm, i.e. Omega_m h^2) and omega_c
+# (= omega_cdm, i.e. Omega_c h^2). Our model is the DR1 joint fit made with `fit_dr1_apfix.py` (the two AP fixes), chain `compact_dr1_joint_smin20_apfix` under
+# `<CHAIN_ROOT>/compact_apfix/`; rerun the inventory cell after the fit so `INFO` contains it. DESI DR1 2024 full-shape chain in black; unfilled contours; no neutrino contribution in
+# Omega_m or omega_m for either chain, so the two are directly comparable.
+
+#%%
+SR_LABEL = 'Sweeney & Rozo model'
+SR_DR1_CHAIN = 'compact_dr1_joint_smin20_apfix'
+SR_PLANES = ['Omega_m', 'omega_m', 'omega_c']                   # x parameters, each plotted against H0
+LABEL_FONTSIZE, TICK_FONTSIZE, LEGEND_FONTSIZE = 20, 13, 15
+
+
+def density_params(smp, label):
+    # (Omega_m, omega_m, omega_c, H0) from a chain that has omch2, ombh2 and H0
+    p = smp.getParams()
+    w = p.omch2 + p.ombh2
+    return MCSamples(samples=np.column_stack([w / (p.H0 / 100) ** 2, w, p.omch2, p.H0]), weights=smp.weights,
+                     names=['Omega_m', 'omega_m', 'omega_c', 'H0'], labels=[r'\Omega_m', r'\Omega_m h^2', r'\Omega_c h^2', r'H_0\ [{\rm km\,s^{-1}\,Mpc^{-1}}]'],
+                     label=label, settings=GETDIST_SETTINGS)
+
+
+if SR_DR1_CHAIN not in INFO:
+    print(f'{SR_DR1_CHAIN}: chain not found (run fit_dr1_apfix.py, then rerun the inventory cell)')
+else:
+    if not INFO[SR_DR1_CHAIN]['status'].get('converged'):
+        print(f'WARNING: {SR_DR1_CHAIN} is not flagged converged (short run?): its contours are only approximate')
+    sr_d = density_params(cosmo_samples(SR_DR1_CHAIN, SR_LABEL), SR_LABEL)
+    desi_d = density_params(desi, 'DESI DR1 2024 full-shape')
+    for xpar in SR_PLANES:
+        g = plots.get_single_plotter(width_inch=5.6, ratio=1.0)
+        g.settings.lab_fontsize = LABEL_FONTSIZE
+        g.settings.axes_fontsize = TICK_FONTSIZE
+        g.settings.legend_fontsize = LEGEND_FONTSIZE
+        g.plot_2d([sr_d, desi_d], xpar, 'H0', filled=[True, False], colors=['tab:red', 'k'], lws=[2.2, 2.2])
+        g.add_legend([SR_LABEL, 'DESI DR1 2024 full-shape'], legend_loc='upper right', fontsize=LEGEND_FONTSIZE)
+        g.export(str(PLOT_DIR / f'posteriors_dr1_sweeney_rozo_apfix_vs_desi_{xpar}_H0.pdf'))
+        g.export(str(PLOT_DIR / f'posteriors_dr1_sweeney_rozo_apfix_vs_desi_{xpar}_H0.png'))
+        plt.show()
+
+#%% [markdown]
+# ### 4d. Figure of merit of the 4c planes: ratio of covariance determinants
+# For each plane (x parameter, H0) of 4c: R = det C_DESI / det C_SR, where C is the 2x2 covariance of the posterior samples in that plane (weights used for the DESI chain).
+# R > 1 means our posterior is the tighter one in that plane. Since the area of a 1-sigma ellipse scales as sqrt(det C), sqrt(R) is the ratio of the DESI to our ellipse areas, i.e. the
+# ratio of the two figures of merit FoM = 1/sqrt(det C) (the DETF-style definition). Both are reported. The 16-84% interval comes from bootstrapping each chain at its effective
+# sample size; it ignores residual autocorrelation (our chains are thinned by tau/2), so it is slightly optimistic. Run 4c first (uses `sr_d`, `desi_d`, `SR_PLANES`).
+# The numbers are printed and saved as `plots/fom_dr1_apfix.csv`.
+
+#%%
+N_BOOT_FOM = 1000
+
+
+def plane_arrays(smp, xpar):
+    names = smp.getParamNames().list()
+    return smp.samples[:, [names.index(xpar), names.index('H0')]], np.asarray(smp.weights, dtype=float)
+
+
+def plane_det(x):
+    return float(np.linalg.det(np.cov(x.T)))
+
+
+def weighted_det(x, w):
+    return float(np.linalg.det(np.cov(x.T, aweights=w)))
+
+
+rng = np.random.default_rng(0)
+fom_rows = []
+for xpar in SR_PLANES:
+    xs, ws = plane_arrays(sr_d, xpar)
+    xd, wd = plane_arrays(desi_d, xpar)
+    det_s, det_d = weighted_det(xs, ws), weighted_det(xd, wd)
+    ess_s, ess_d = int(ws.sum() ** 2 / (ws ** 2).sum()), int(wd.sum() ** 2 / (wd ** 2).sum())
+    cdf_s, cdf_d = np.cumsum(ws) / ws.sum(), np.cumsum(wd) / wd.sum()
+    boot = np.empty(N_BOOT_FOM)
+    for b in range(N_BOOT_FOM):
+        i = np.minimum(np.searchsorted(cdf_s, rng.random(ess_s)), len(xs) - 1)
+        j = np.minimum(np.searchsorted(cdf_d, rng.random(ess_d)), len(xd) - 1)
+        boot[b] = plane_det(xd[j]) / plane_det(xs[i])
+    lo, hi = np.percentile(boot, [16, 84])
+    r = det_d / det_s
+    fom_rows.append({'plane': f'{xpar} - H0', 'det C (Sweeney & Rozo)': det_s, 'det C (DESI)': det_d, 'R = det ratio (DESI/ours)': r, 'R 16%': lo, 'R 84%': hi,
+                     'sqrt(R) = FoM ratio': np.sqrt(r), 'sqrt(R) 16%': np.sqrt(lo), 'sqrt(R) 84%': np.sqrt(hi), 'ESS ours': ess_s, 'ESS DESI': ess_d})
+fom = pd.DataFrame(fom_rows).set_index('plane')
+display(fom.drop(columns=['R 16%', 'R 84%', 'sqrt(R) 16%', 'sqrt(R) 84%']).astype(float).apply(lambda col: col.map('{:.4g}'.format)))     # 4 significant figures (the determinants are tiny)
+fom.to_csv(PLOT_DIR / 'fom_dr1_apfix.csv')
+for plane, r in fom.iterrows():
+    print(f'{plane}: det ratio R = {r["R = det ratio (DESI/ours)"]:.2f} (+{r["R 84%"] - r["R = det ratio (DESI/ours)"]:.2f} / -{r["R = det ratio (DESI/ours)"] - r["R 16%"]:.2f}); '
+          f'FoM (area) ratio sqrt(R) = {r["sqrt(R) = FoM ratio"]:.2f} (+{r["sqrt(R) 84%"] - r["sqrt(R) = FoM ratio"]:.2f} / -{r["sqrt(R) = FoM ratio"] - r["sqrt(R) 16%"]:.2f})')
 
 #%% [markdown]
 # ## 5. Compact joint fits at different s_min, and the single-mock MAPs
@@ -554,6 +662,33 @@ for case, (pattern, joint_name) in INDIV.items():
     plt.show()
 
 #%% [markdown]
+# ### 6c. DR1 leave-one-out fits
+# Shared-cosmology contours of the six DR1 joint fits that each omit one tracer (coloured by the DESI colour of the omitted tracer), with the
+# joint fit to all six tracers in black. The table gives each leave-one-out posterior mean relative to the all-tracer fit, in units of the all-tracer
+# posterior standard deviation. `LOO_FILLED = True` fills the contours.
+
+#%%
+LOO_FILLED = False
+LOO_FULL = 'compact_dr1_joint_smin20'
+loo = [(k, f'compact_dr1_joint_no{fl.SHORT_NAMES[fl.kname(k)]}_smin20') for k in fl.FIT_KEYS]
+loo = [(k, n) for k, n in loo if n in INFO]
+if not loo or LOO_FULL not in INFO:
+    print(f'leave-one-out: found {len(loo)} of {len(fl.FIT_KEYS)} chains; all-tracer chain {"found" if LOO_FULL in INFO else "missing"}')
+else:
+    samples = [cosmo_samples(n, f'no {TRACER_SHORT[fl.kname(k)]}') for k, n in loo] + [cosmo_samples(LOO_FULL, 'All tracers')]
+    g = plots.get_subplot_plotter()
+    g.triangle_plot(samples, params=PARAMS, filled=LOO_FILLED,
+                    contour_colors=[TRACER_COLOR[k] for k, _ in loo] + ['k'], contour_lws=[1.2] * len(loo) + [1.7],
+                    legend_labels=[sm.getLabel() for sm in samples])
+    g.export(str(PLOT_DIR / 'posteriors_dr1_leave_one_out.pdf'))
+    g.export(str(PLOT_DIR / 'posteriors_dr1_leave_one_out.png'))
+    plt.show()
+    full = samples[-1]
+    display(pd.DataFrame([{'left out': TRACER_SHORT[fl.kname(k)],
+                           **{f'{p} shift [sigma]': (smp.mean(p) - full.mean(p)) / full.std(p) for p in PARAMS}}
+                          for (k, _), smp in zip(loo, samples[:-1])]).set_index('left out').round(2))
+
+#%% [markdown]
 # ## 7. Bias parameters of the baseline joint compact fits
 # One triangle plot per baseline joint compact fit (mean mocks, DR1) of the $b_1$, $b_2$ of the six tracer-bins, grouped by tracer.
 # The joint-fit parameter vector is [h, ω_b, ω_cdm, ln A_s, n_s, then (b_1, b_2) for each tracer-bin in `fl.FIT_KEYS` order].
@@ -640,7 +775,6 @@ for case in ('mock', 'dr1'):
 if mass_rows:
     display(pd.DataFrame(mass_rows).set_index(['case', 'scheme']).round(4))
 
-
 #%% [markdown]
 # ## 9. Likelihood comparison: compact (skew-t) vs Gaussian
 # Baseline joint fits (mean mocks, DR1) at s_min = 20 and 40; both models have the same free parameters, data, covariance and priors, so
@@ -648,16 +782,16 @@ if mass_rows:
 # $\Delta\chi^2=\chi^2_{\rm Gauss}-\chi^2_{\rm compact}$ (positive favours the compact model), per tracer and in total, at each chain's MAP
 # (its highest-posterior sample). The MAP is a noisy statistic (the best sample sits a few ln P units below the true maximum), so the
 # table also gives the posterior-mean $\langle\ln P\rangle$, which has much smaller sampling error.
- 
+
 #%%
 LLH_SMINS = (20, 40)
 SMIN_COLOR = globals().get('SMIN_COLOR') or {20: 'tab:blue', 40: 'tab:purple'}     # same colours as section 5
- 
- 
+
+
 def llh_chain(model, case, s):
     return f'{model}_{"mean" if case == "mock" else "dr1"}_joint_smin{s}'
- 
- 
+
+
 def map_chi2(name):
     # (ln P at the MAP, [(tracer, n_data, chi2), ...], posterior-mean ln P) for one baseline joint chain
     info = INFO[name]
@@ -674,8 +808,8 @@ def map_chi2(name):
     with h5py.File(info['path'], 'r') as f:
         lp_all = f['mcmc/log_prob'][info['burn']:info['iterations']]
     return lp, rows, float(np.mean(lp_all[np.isfinite(lp_all)]))
- 
- 
+
+
 llh = {}      # (case, s_min) -> {'compact': (lnP, rows, mean lnP), 'gauss': ...}
 for case in ('mock', 'dr1'):
     for s in LLH_SMINS:
@@ -684,7 +818,7 @@ for case in ('mock', 'dr1'):
             llh[(case, s)] = {m: map_chi2(n) for m, n in names.items()}
         else:
             print(f'{case}, s_min={s}: chains missing: {[n for n in names.values() if n not in INFO]}')
- 
+
 table = []
 for (case, s), r in llh.items():
     (lc, rows_c, mc), (lg, rows_g, mg) = r['compact'], r['gauss']
@@ -700,7 +834,7 @@ if table:
         for (t, n, c_c), (_, _, c_g) in zip(r['compact'][1], r['gauss'][1]):
             tr_rows.append({'case': case, 's_min': s, 'tracer': t, 'n_data': n, 'chi2 compact': c_c, 'chi2 Gauss': c_g, 'Delta chi2': c_g - c_c})
     display(pd.DataFrame(tr_rows).set_index(['case', 's_min', 'tracer']).round(2))
- 
+
     # per-tracer and total Delta chi^2 (Gauss - compact): positive = compact fits better
     cases = [c for c in ('mock', 'dr1') if any(k[0] == c for k in llh)]
     fig, axes = plt.subplots(1, len(cases), figsize=(5.2 * len(cases), 3.4), squeeze=False)
@@ -725,22 +859,21 @@ if table:
     fig.savefig(PLOT_DIR / 'llh_compact_vs_gauss.png', dpi=150, bbox_inches='tight')
     plt.show()
 
-
- #%% [markdown]
+#%% [markdown]
 # ## 10. χ² of the baseline DR1 fits (s_min = 20)
 # χ² is evaluated at each chain's MAP (its highest-posterior sample) against the DR1 data vector and covariance used in the fit (windowed model),
 # per tracer and in total, for the joint fits (compact and Gaussian) and the six individual-tracer compact fits. Degrees of freedom are
 # N_data − N_parameters (17 for a joint fit, 7 for an individual one); they are approximate because ω_b and n_s are prior-dominated and the model is
 # nonlinear. The last table compares the joint fit with the individual fits tracer by tracer: Σ[χ²_joint − χ²_indiv] over the six tracers, against the
 # 6×7 − 17 = 25 extra parameters of the individual fits, tests whether the tracers are consistent with one cosmology.
- 
+
 #%%
 from scipy.stats import chi2 as chi2_dist
- 
+
 DR1_JOINT = {'compact': 'compact_dr1_joint_smin20', 'gauss': 'gauss_dr1_joint_smin20'}
 DR1_INDIV = 'compact_dr1_indiv_{}_smin20'
- 
- 
+
+
 def chi2_by_tracer(name):
     # (rows, n_params, ln P at the MAP); rows = [(tracer, n_data, chi2, max |pull|), ...]
     info = INFO[name]
@@ -756,16 +889,16 @@ def chi2_by_tracer(name):
         sig = np.sqrt(np.diag(np.linalg.inv(d['cov_inv'])))
         rows.append((TRACER_SHORT[fl.kname(key)], resid.size, float(resid @ d['cov_inv'] @ resid), float(np.max(np.abs(resid) / sig))))
     return rows, problem.ndim, lp
- 
- 
+
+
 def summarize(rows, ndim):
     n, chi2 = sum(r[1] for r in rows), sum(r[2] for r in rows)
     return n, chi2, n - ndim, chi2 / (n - ndim), chi2_dist.sf(chi2, n - ndim)
- 
- 
+
+
 joint_res = {m: chi2_by_tracer(n) for m, n in DR1_JOINT.items() if n in INFO}
 indiv_res = {k: chi2_by_tracer(DR1_INDIV.format(fl.kname(k))) for k in fl.FIT_KEYS if DR1_INDIV.format(fl.kname(k)) in INFO}
- 
+
 # ---- joint fits
 tab = []
 for m, (rows, ndim, lp) in joint_res.items():
@@ -777,7 +910,7 @@ for m, (rows, ndim, lp) in joint_res.items():
     tab.append({'fit': f'joint {m}', 'tracer': 'TOTAL', 'n_data': n, 'chi2': c, 'chi2/n': c / n, 'dof': dof, 'chi2/dof': red, 'p-value': p})
 if tab:
     display(pd.DataFrame(tab).set_index(['fit', 'tracer']).round(3))
- 
+
 # ---- individual fits, with the same tracer's joint-fit chi2 alongside
 if indiv_res:
     tab, tot_ind, tot_joint, k_ind = [], 0.0, 0.0, 0
@@ -797,7 +930,7 @@ if indiv_res:
         d_chi2, d_dof = tot_joint - tot_ind, k_ind - joint_res['compact'][1]
         print(f'joint vs individual (compact): sum Delta chi2 = {d_chi2:.1f} for {d_dof} extra parameters in the individual fits; '
               f'p = {chi2_dist.sf(d_chi2, d_dof):.3f}   (small p = tracers pull the shared cosmology in different directions)')
- 
+
 # ---- figure: reduced chi2 (chi2 / dof) per tracer and in total. Joint fits: per-tracer dof = n_data - N_params/6 (the 17 parameters split
 # evenly across the six tracers, so the dofs sum to N - 17); individual fits: n_data - 7. Error bars = expected 1-sigma scatter, sqrt(2/dof).
 if joint_res or indiv_res:
@@ -836,11 +969,11 @@ if joint_res or indiv_res:
     fig.savefig(PLOT_DIR / 'chi2_dr1_baseline.pdf', bbox_inches='tight')
     fig.savefig(PLOT_DIR / 'chi2_dr1_baseline.png', dpi=150, bbox_inches='tight')
     plt.show()
- 
+
 #%% [markdown]
 # ### 10b. Reduced χ² of the baseline DR1 fits, without error bars
 # Same bars as the figure above (uses `joint_res`, `indiv_res` and `summarize` from section 10).
- 
+
 #%%
 if joint_res or indiv_res:
     labels_x = TRACER_NAMES + ['Total']
@@ -868,3 +1001,394 @@ if joint_res or indiv_res:
     fig.savefig(PLOT_DIR / 'chi2_dr1_baseline_noerr.pdf', bbox_inches='tight')
     fig.savefig(PLOT_DIR / 'chi2_dr1_baseline_noerr.png', dpi=150, bbox_inches='tight')
     plt.show()
+
+#%% [markdown]
+# ## 11. Parameter-difference tension check (Lemos et al. 2021, Sec. 4.3)
+# Tests whether two independent posteriors A and B agree in a shared parameter space: draw random sample pairs, form d = θ_A − θ_B, fit a KDE
+# (Silverman bandwidth), and take p = the fraction of d samples whose density exceeds the KDE density at d = 0; N_σ = norm.isf((1 − p)/2).
+# A Gaussian version (χ² = Δμᵀ(C_A + C_B)⁻¹Δμ with dof = number of parameters) is computed alongside. The KDE version is reliable to roughly 3σ at
+# this sample size; beyond that, use the Gaussian one. Caveats: A and B are assumed independent (QSO overlaps LRG3/ELG2, with cross-covariance
+# neglected); prior-dominated or prior-truncated parameters dilute tension, so only constrained parameters are used (the single-tracer posteriors
+# in h and ω_cdm can be wide and truncated by the flat bounds, which would underestimate tension); with six tracers a ~2σ outlier is not unusual.
+# 11a defines the machinery, 11b runs tracer i vs all other tracers (DR1, s_min = 20).
+
+#%%
+from scipy.stats import gaussian_kde, norm
+from scipy.stats import chi2 as chi2_dist
+
+TENSION_ALL = 'compact_dr1_joint_smin20'            # joint fit to all tracers (overlay plots)
+TENSION_PARAMS = ['omch2', 'H0', 'logA']          # constrained shared parameters for the multi-parameter test (<= 3 for the KDE)
+N_PAIRS = 20000
+TENSION_SHOW_INLINE = True                         # False: only save the corner plots
+TENSION_LABEL = {'omch2': r'\omega_{\rm cdm}', 'H0': 'H_0', 'logA': r'\ln(10^{10}A_s)', 'ombh2': r'\omega_b', 'ns': 'n_s'}
+_COL = {'joint': dict(h=0, ombh2=1, omch2=2, logA=3, ns=4), 'indiv': dict(h=0, ombh2=1, omch2=2, logA=3, ns=6)}   # column of each parameter
+
+
+def chain_params(name, kind, params):
+    # equal-weight post-burn-in samples (thinned by THIN_TAUS * tau_max) of shared parameters; kind = 'joint' or 'indiv' chain layout
+    info = INFO[name]
+    thin = max(1, int(THIN_TAUS * info['status'].get('tau_max', 1.0)))
+    with h5py.File(info['path'], 'r') as f:
+        flat = f['mcmc/chain'][info['burn']:info['iterations']:thin, :, :]
+    flat = flat.reshape(-1, flat.shape[2])
+    return np.column_stack([100 * flat[:, _COL[kind]['h']] if p == 'H0' else flat[:, _COL[kind][p]] for p in params])
+
+
+def gaussian_tension(a, b):
+    dmu = a.mean(0) - b.mean(0)
+    C = np.atleast_2d(np.cov(a.T)) + np.atleast_2d(np.cov(b.T))
+    q = float(dmu @ np.linalg.solve(C, dmu))
+    return q, float(norm.isf(chi2_dist.sf(q, a.shape[1]) / 2))
+
+
+def mc_tension(a, b, n=N_PAIRS, seed=0):
+    rng = np.random.default_rng(seed)
+    d = a[rng.integers(len(a), size=n)] - b[rng.integers(len(b), size=n)]
+    kde = gaussian_kde(d.T, bw_method='silverman')
+    inside = min(float(np.mean(kde(d.T) > kde(np.zeros((d.shape[1], 1))))), 1 - 1 / n)
+    return d, inside, float(norm.isf((1 - inside) / 2))
+
+
+def tension(a, b, n=N_PAIRS, seed=0):
+    d, p_in, s_mc = mc_tension(a, b, n, seed)
+    q, s_g = gaussian_tension(a, b)
+    return d, dict(p_inside=p_in, sigma_mc=s_mc, chi2=q, sigma_gauss=s_g, saturated=p_in >= 1 - 1.5 / n)   # saturated: MC cannot resolve beyond ~4 sigma
+
+
+def difference_corner(d, params, stem, color='k'):
+    # corner plot of d = theta_A - theta_B with the origin marked and, in each 2D panel, the iso-density contour of the 2D KDE through d = 0
+    names = [f'd_{p}' for p in params]
+    smp = MCSamples(samples=d, names=names, labels=[rf'\Delta {TENSION_LABEL[p]}' for p in params], settings=GETDIST_SETTINGS)
+    g = plots.get_subplot_plotter()
+    g.triangle_plot([smp], params=names, filled=True, contour_colors=[color], markers={n: 0.0 for n in names})
+    sub = d[np.random.default_rng(1).choice(len(d), size=min(6000, len(d)), replace=False)]
+    for i in range(len(params)):
+        for j in range(i):
+            ax = g.subplots[i, j]                      # x = params[j], y = params[i]
+            kde2 = gaussian_kde(sub[:, [j, i]].T, bw_method='silverman')
+            xs, ys = np.linspace(*ax.get_xlim(), 80), np.linspace(*ax.get_ylim(), 80)
+            X, Y = np.meshgrid(xs, ys)
+            Z = kde2(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
+            ax.contour(X, Y, Z, levels=[float(kde2(np.zeros((2, 1)))[0])], colors='k', linestyles='--', linewidths=1.0)
+    g.export(str(PLOT_DIR / f'{stem}.pdf'))
+    g.export(str(PLOT_DIR / f'{stem}.png'))
+    if TENSION_SHOW_INLINE:
+        plt.show()
+    else:
+        plt.close(g.fig)
+
+
+def overlay_corner(arrays, labels, colors, params, stem, lws=None):
+    smps = [MCSamples(samples=a, names=params, labels=[TENSION_LABEL[p] for p in params], label=lab, settings=GETDIST_SETTINGS)
+            for a, lab in zip(arrays, labels)]
+    g = plots.get_subplot_plotter()
+    g.triangle_plot(smps, params=params, filled=False, contour_colors=colors, contour_lws=lws or [1.4] * len(smps),
+                    legend_labels=labels)
+    g.export(str(PLOT_DIR / f'{stem}.pdf'))
+    g.export(str(PLOT_DIR / f'{stem}.png'))
+    if TENSION_SHOW_INLINE:
+        plt.show()
+    else:
+        plt.close(g.fig)
+
+#%%
+# ---- 11b. each tracer alone (individual DR1 fit) vs the joint fit to all the other tracers (leave-one-out fit), compact model, s_min = 20
+tension_rows = []
+for key in fl.FIT_KEYS:
+    t = TRACER_SHORT[fl.kname(key)]
+    name_a, name_b = f'compact_dr1_indiv_{fl.kname(key)}_smin20', f'compact_dr1_joint_no{t}_smin20'
+    if name_a not in INFO or name_b not in INFO or TENSION_ALL not in INFO:
+        print(f'{t}: missing chains ({[n for n in (name_a, name_b, TENSION_ALL) if n not in INFO]})')
+        continue
+    A = chain_params(name_a, 'indiv', TENSION_PARAMS)
+    B = chain_params(name_b, 'joint', TENSION_PARAMS)
+    d, res = tension(A, B)
+    row = {'tracer': t, f'{"+".join(TENSION_PARAMS)}: N_sigma (MC)': res['sigma_mc'], 'p_inside': res['p_inside'],
+           'N_sigma (Gauss)': res['sigma_gauss'], 'chi2': res['chi2'], 'MC saturated': res['saturated']}
+    for k, p in enumerate(TENSION_PARAMS):                       # single-parameter tests: which parameter drives the difference?
+        _, r1 = tension(A[:, [k]], B[:, [k]], seed=k + 1)
+        row[f'{p}: MC'], row[f'{p}: Gauss'] = r1['sigma_mc'], r1['sigma_gauss']
+    tension_rows.append(row)
+    difference_corner(d, TENSION_PARAMS, f'tension_dr1_{t}_vs_rest_difference', color=TRACER_COLOR[key])
+    overlay_corner([A, B, chain_params(TENSION_ALL, 'joint', TENSION_PARAMS)], [f'{t} alone', 'all other tracers', 'all tracers'],
+                   [TRACER_COLOR[key], '0.45', 'k'], TENSION_PARAMS, f'tension_dr1_{t}_vs_rest_overlay', lws=[1.5, 1.5, 1.7])
+
+if tension_rows:
+    tdf = pd.DataFrame(tension_rows).set_index('tracer')
+    display(tdf.round(2))
+    tdf.to_csv(PLOT_DIR / 'tension_dr1_tracer_vs_rest.csv')
+    col = f'{"+".join(TENSION_PARAMS)}: N_sigma (MC)'
+    fig, ax = plt.subplots(figsize=(6.0, 3.3))
+    colors = [TRACER_COLOR[k] for k in fl.FIT_KEYS if TRACER_SHORT[fl.kname(k)] in tdf.index]
+    ax.bar(range(len(tdf)), tdf[col], color=colors, width=0.6, label='KDE (Monte Carlo)')
+    ax.plot(range(len(tdf)), tdf['N_sigma (Gauss)'], 'ko', ms=5, label='Gaussian')
+    for s in (1, 2, 3):
+        ax.axhline(s, color='0.6', lw=0.7, ls=':')
+    ax.set_xticks(range(len(tdf)))
+    ax.set_xticklabels(tdf.index)
+    ax.set_ylabel(r'$N_\sigma$ (tracer alone vs all others)')
+    ax.legend(frameon=False, fontsize=8)
+    fig.tight_layout()
+    fig.savefig(PLOT_DIR / 'tension_dr1_tracer_vs_rest_summary.pdf', bbox_inches='tight')
+    fig.savefig(PLOT_DIR / 'tension_dr1_tracer_vs_rest_summary.png', dpi=150, bbox_inches='tight')
+    plt.show()
+
+#%% [markdown]
+# ## 12. Mean-mock fit with the averaged covariance: triangle plots
+# Companion to 3b. (i) Shared-cosmology triangle of the averaged-covariance fit (black) against the single-mock-covariance fit (blue), with the
+# AbacusSummit c000 truth marked; (ii) the same two fits in the bias parameters; (iii) a table of the MAP and the posterior mean relative to the truth, in
+# units of each posterior's standard deviation. ω_b and n_s have priors centred on the truth, so their offsets are not informative. Uses `cosmo_samples`
+# (section 4), `joint_map_and_std` (5b) and `bias_samples` (7), so run those first.
+
+#%%
+AVG_NAME, SINGLE_NAME = 'compact_mean_joint_avgcov_smin20', 'compact_mean_joint_smin20'
+if AVG_NAME not in INFO or SINGLE_NAME not in INFO:
+    print(f'missing chains: {[n for n in (AVG_NAME, SINGLE_NAME) if n not in INFO]}')
+else:
+    lab_one, lab_avg = r'Mean mocks, single-mock covariance', r'Mean mocks, averaged covariance'
+    # (i) cosmology
+    s_one, s_avg = cosmo_samples(SINGLE_NAME, lab_one), cosmo_samples(AVG_NAME, lab_avg)
+    g = plots.get_subplot_plotter()
+    g.triangle_plot([s_one, s_avg], params=PARAMS, filled=False, contour_colors=['tab:blue', 'k'], contour_lws=[1.3, 1.6],
+                    legend_labels=[lab_one, lab_avg], markers=TRUTH)
+    g.export(str(PLOT_DIR / 'posteriors_mock_avgcov_cosmology.pdf'))
+    g.export(str(PLOT_DIR / 'posteriors_mock_avgcov_cosmology.png'))
+    plt.show()
+    # (ii) bias parameters
+    b_one, b_avg = bias_samples(SINGLE_NAME, lab_one), bias_samples(AVG_NAME, lab_avg)
+    g = plots.get_subplot_plotter(width_inch=11)
+    g.triangle_plot([b_one, b_avg], params=BIAS_NAMES, filled=BIAS_FILLED, contour_colors=['tab:blue', 'k'], contour_lws=[1.2, 1.5],
+                    legend_labels=[lab_one, lab_avg])
+    g.export(str(PLOT_DIR / 'bias_mock_avgcov.pdf'))
+    g.export(str(PLOT_DIR / 'bias_mock_avgcov.png'))
+    plt.show()
+    # (iii) offsets from the truth
+    rows = []
+    for label, name, smp in (('single-mock cov', SINGLE_NAME, s_one), ('averaged cov', AVG_NAME, s_avg)):
+        mp, sd = joint_map_and_std(name)
+        for k, p in enumerate(PARAMS):
+            rows.append({'fit': label, 'parameter': p, 'truth': TRUTH[p], 'MAP': mp[k], 'mean': smp.mean(p), 'std': smp.std(p),
+                         'MAP offset [sigma]': (mp[k] - TRUTH[p]) / sd[k], 'mean offset [sigma]': (smp.mean(p) - TRUTH[p]) / smp.std(p)})
+    display(pd.DataFrame(rows).set_index(['fit', 'parameter']).round(4))
+
+#%% [markdown]
+# ## 13. Compact fits against the DESI DR1 full-shape-only and BAO-only chains
+# The BAO-only chain is the public DESI DR1 BAO cosmology chain (DESI 2024 VI); fetch it with `download_desi_bao_chains.py`, which mirrors the layout of the full-shape
+# chains. `find_bao_chain` looks in `BAO_ROOT` for a `desi-bao-all*` folder with no CMB/SN likelihoods, preferring the same priors as the full-shape chain (BBN + ns10)
+# and otherwise BBN only. Its priors (BBN on omega_b, and whatever it uses on n_s) are DESI's, not ours. Contours are unfilled: our fit in blue, DESI full-shape only
+# in black, DESI BAO only in dashed red; panels involving parameters a chain does not have show only the other chains.
+
+#%%
+BAO_ROOT = '/spiffball/cosweeney/DESI/DR1/bao-cosmo-params/v1.0/cobaya/base/'
+BAO_REJECT = ('planck', 'act', 'pantheon', 'union', 'desy5', 'thetastar', 'rdrag', 'add_', 'sdss')
+SR_LABEL = 'Sweeney & Rozo model'
+
+
+def find_bao_chain(root):
+    root = Path(root)
+    cands = sorted(d for d in root.glob('desi-bao-all*') if d.is_dir() and not any(w in d.name for w in BAO_REJECT)) if root.is_dir() else []
+    for pref in ('schoneberg2024-bbn_planck2018-ns10', 'schoneberg2024-bbn'):
+        for d in cands:
+            if pref in d.name and 'fixed' not in d.name:
+                return d
+    return cands[0] if cands else None
+
+
+bao = None
+bao_dir = find_bao_chain(BAO_ROOT)
+if bao_dir is None:
+    print(f'no BAO-only chain found under {BAO_ROOT}: run download_desi_bao_chains.py (or set BAO_ROOT); the comparisons below show the full-shape chain only')
+else:
+    bao = loadMCSamples(str(bao_dir / 'chain'), settings=GETDIST_SETTINGS)
+    bao_names = bao.getParamNames().list()
+    print(f'BAO-only chain: {bao_dir.name} ({len(bao.samples)} samples)')
+    if [p for p in PARAMS if p not in bao_names]:
+        print(f'  note: it has no {[p for p in PARAMS if p not in bao_names]}; available parameters: {bao_names}')
+
+
+def compare_with_desi(name, label, stem, markers=None):
+    if name not in INFO:
+        print(f'{name}: chain not found')
+        return
+    samples, colors, styles = [cosmo_samples(name, label), desi], ['tab:blue', 'k'], ['-', '-']
+    legend = [label, 'DESI DR1 full-shape only']
+    if bao is not None:
+        samples.append(bao)
+        colors.append('tab:red')
+        styles.append('--')
+        legend.append('DESI DR1 BAO only')
+    g = plots.get_subplot_plotter()
+    g.triangle_plot(samples, params=PARAMS, filled=False, contour_colors=colors, contour_ls=styles, contour_lws=[1.5] * len(samples),
+                    legend_labels=legend, markers=markers)
+    g.export(str(PLOT_DIR / f'{stem}.pdf'))
+    g.export(str(PLOT_DIR / f'{stem}.png'))
+    plt.show()
+
+
+compare_with_desi('compact_mean_joint_smin20', 'Mean mocks (single-mock covariance)', 'posteriors_mock_vs_desi_fs_bao', markers=TRUTH)
+compare_with_desi('compact_dr1_joint_smin20', SR_LABEL, 'posteriors_dr1_vs_desi_fs_bao')
+
+#%% [markdown]
+# ## 14. Posterior mean vs MAP: baseline joint fit and individual-tracer fits to DR1
+# One column per parameter (`PVE_PARAMS`: the four ΛCDM parameters the data constrain; add 'ombh2' for the prior-dominated ω_b). In each column the rows are the joint fit to all
+# tracers (top) and the six individual-tracer fits, in their DESI colours. Filled circles with a line are the posterior mean ± 1σ; open diamonds are the MAP (the highest-posterior
+# sample after burn-in, which sits a few ln P units below the true maximum, so a single MAP can scatter by a few tenths of σ). A mean well away from the MAP, compared with σ,
+# signals a projection-volume effect.
+
+#%%
+PVE_PARAMS = ['omch2', 'H0', 'logA', 'ns']
+_PVE_COL = {'joint': dict(h=0, ombh2=1, omch2=2, logA=3, ns=4), 'indiv': dict(h=0, ombh2=1, omch2=2, logA=3, ns=6)}
+
+
+def mean_map(name):
+    # (mean, std, MAP) of (omch2, ombh2, H0, logA, ns) over the post-burn-in samples
+    info = INFO[name]
+    c = _PVE_COL['indiv' if '_indiv_' in name else 'joint']
+    with h5py.File(info['path'], 'r') as f:
+        x = f['mcmc/chain'][info['burn']:info['iterations'], :, :]
+        lp = f['mcmc/log_prob'][info['burn']:info['iterations']]
+    x, lp = x.reshape(-1, x.shape[2]), lp.reshape(-1)
+    cols = np.column_stack([x[:, c['omch2']], x[:, c['ombh2']], 100 * x[:, c['h']], x[:, c['logA']], x[:, c['ns']]])
+    ok = np.isfinite(lp)
+    cols, lp = cols[ok], lp[ok]
+    return cols.mean(0), cols.std(0), cols[np.argmax(lp)]
+
+
+pve = [('All tracers', 'compact_dr1_joint_smin20', 'k')]
+pve += [(TRACER_SHORT[fl.kname(k)], f'compact_dr1_indiv_{fl.kname(k)}_smin20', TRACER_COLOR[k]) for k in fl.FIT_KEYS]
+pve = [p for p in pve if p[1] in INFO]
+
+if not pve:
+    print('no compact DR1 chains found')
+else:
+    stats = {p[1]: mean_map(p[1]) for p in pve}
+    ys = np.arange(len(pve))[::-1]                                   # first entry at the top
+    fig, axes = plt.subplots(1, len(PVE_PARAMS), figsize=(3.1 * len(PVE_PARAMS), 3.7), sharey=True)
+    for ax, p in zip(axes, PVE_PARAMS):
+        k = PARAMS.index(p)
+        for y, (lab, name, col) in zip(ys, pve):
+            mean, sd, best = stats[name]
+            ax.errorbar(mean[k], y, xerr=sd[k], fmt='none', ecolor=col, elinewidth=1.3, capsize=3.5, capthick=1.3, alpha=0.5, zorder=1)
+            ax.plot(mean[k], y, 'o', color=col, ms=6.5, zorder=3)
+            ax.plot(best[k], y, 'D', mfc='none', mec=col, ms=7.5, mew=1.6, zorder=4)
+        ax.axhline(ys[0] - 0.5, color='0.8', lw=0.8)                 # separates the joint fit from the individual fits
+        ax.set_xlabel(f'${LABELS[k]}$', fontsize=14)
+        ax.margins(x=0.06)
+        ax.set_ylim(ys[-1] - 0.7, ys[0] + 0.7)
+    axes[0].set_yticks(ys)
+    axes[0].set_yticklabels([p[0] for p in pve])
+    fig.tight_layout()
+    fig.legend(handles=[Line2D([0], [0], marker='o', color='0.3', lw=1.3, ms=6.5, label=r'mean $\pm\,1\sigma$'),
+                        Line2D([0], [0], marker='D', ls='none', mfc='none', mec='0.3', mew=1.6, ms=7.5, label='MAP')],
+               loc='lower center', ncol=2, frameon=False, fontsize=10, bbox_to_anchor=(0.5, -0.07))
+    fig.savefig(PLOT_DIR / 'dr1_mean_vs_map.pdf', bbox_inches='tight')
+    fig.savefig(PLOT_DIR / 'dr1_mean_vs_map.png', dpi=150, bbox_inches='tight')
+    plt.show()
+    display(pd.DataFrame({lab: {p: (stats[name][0][PARAMS.index(p)] - stats[name][2][PARAMS.index(p)]) / stats[name][1][PARAMS.index(p)]
+                                for p in PVE_PARAMS} for lab, name, _ in pve}).T.rename_axis('(mean - MAP) / sigma').round(2))
+
+#%% [markdown]
+# ## 15. Individual tracers and their combination in the Omega_m-sigma_8 and Omega_m-H_0 planes (cf. DESI 2024 V Fig. 16)
+# Filled 68% / 95% contours of the six individual-tracer compact DR1 fits (DESI tracer colours) and of the joint fit to all six tracers (black, on top). sigma_8 is not a fit
+# parameter, so it is computed with CAMB (massive neutrinos at 0.06 eV, A_s = e^{ln A_s}/10^10) for every plotted sample, through an interpolator: sigma_8 scales exactly as
+# sqrt(A_s), so ln sigma_8 at a reference A_s is interpolated over (h, omega_b, omega_cdm, n_s) with a quintic RBF trained on a Sobol design of CAMB runs covering the samples
+# (`N_TRAIN` runs, computed in parallel by the separate script `sigma8_design.py` with progress printed, cached in `plots/sigma8_training.npz`, rebuilt if the samples leave the cached box).
+# The accuracy on held-out CAMB runs is printed. Set `N_PROC` to the number of cores you can spare.
+# Omega_m = (omega_b + omega_cdm)/h^2 (no neutrino contribution), as in 4c.
+
+#%%
+import os
+import subprocess
+from matplotlib.patches import Patch
+from scipy.stats import qmc
+from scipy.interpolate import RBFInterpolator
+
+N_TRAIN, N_TEST = 256, 40
+N_PROC = max(1, min(os.cpu_count() or 1, 32))
+N_SAMPLES_PLOT = 20000
+SIGMA8_CACHE = PLOT_DIR / 'sigma8_training.npz'
+FIG16_LIMITS = dict(Omega_m=(0.1, 0.6), sigma8=(0.4, 1.2), H0=(60, 80))
+FIG16_ALPHA = 0.55
+A_S_REF = 2.1e-9
+
+
+def run_camb_design(X, Xt):
+    # CAMB sigma_8 at A_s = A_S_REF for the design points, computed by sigma8_design.py in a separate process (spawned workers, progress printed)
+    f_in, f_out = PLOT_DIR / 'sigma8_design_in.npz', PLOT_DIR / 'sigma8_design_out.npz'
+    np.savez(f_in, X=X, Xt=Xt)
+    f_out.unlink(missing_ok=True)
+    r = subprocess.run([sys.executable, str(HERE / 'sigma8_design.py'), str(f_in), str(f_out), '--nproc', str(N_PROC)])
+    if r.returncode != 0 or not f_out.exists():
+        raise RuntimeError('sigma8_design.py failed (see its output above); it can also be run by hand: python sigma8_design.py design_in.npz design_out.npz')
+    out = np.load(f_out)
+    assert abs(float(out['a_s_ref']) / A_S_REF - 1) < 1e-12, 'A_S_REF differs between sigma8_design.py and this cell'
+    return out['y'], out['yt']
+
+
+def chain_cosmo_dict(name):
+    info = INFO[name]
+    c = _PVE_COL['indiv' if '_indiv_' in name else 'joint']
+    thin = max(1, int(THIN_TAUS * info['status'].get('tau_max', 1.0)))
+    with h5py.File(info['path'], 'r') as f:
+        x = f['mcmc/chain'][info['burn']:info['iterations']:thin, :, :]
+    x = x.reshape(-1, x.shape[2])
+    if len(x) > N_SAMPLES_PLOT:
+        x = x[np.random.default_rng(0).choice(len(x), size=N_SAMPLES_PLOT, replace=False)]
+    return {p: x[:, c[p]] for p in ('h', 'ombh2', 'omch2', 'logA', 'ns')}
+
+
+def build_sigma8_emulator(lo, hi):
+    loaded = False
+    if SIGMA8_CACHE.exists():
+        cache = np.load(SIGMA8_CACHE)
+        if np.all(cache['lo'] <= lo) and np.all(cache['hi'] >= hi):
+            lo, hi, X, y, Xt, yt = (cache[k] for k in ('lo', 'hi', 'X', 'y', 'Xt', 'yt'))
+            loaded = True
+    if not loaded:
+        X = qmc.scale(qmc.Sobol(4, seed=1).random(N_TRAIN), lo, hi)
+        Xt = qmc.scale(np.random.default_rng(5).random((N_TEST, 4)), lo, hi)
+        print(f'computing {N_TRAIN + N_TEST} CAMB runs with sigma8_design.py on {N_PROC} processes (progress below) ...')
+        y, yt = run_camb_design(X, Xt)
+        np.savez(SIGMA8_CACHE, lo=lo, hi=hi, X=X, y=y, Xt=Xt, yt=yt)
+    u = lambda x: (x - lo) / (hi - lo)
+    rbf = RBFInterpolator(u(X), np.log(y), kernel='quintic', degree=2)
+    err = np.exp(rbf(u(Xt))) / yt - 1
+    print(f'sigma_8 interpolator ({"cached" if loaded else "new"} training set, {len(X)} CAMB runs): held-out max |error| = {np.abs(err).max():.3%}, rms = {np.sqrt((err ** 2).mean()):.3%}')
+    if np.abs(err).max() > 0.005:
+        print('  WARNING: held-out error above 0.5%; increase N_TRAIN')
+    return lambda x: np.exp(rbf(u(x)))
+
+
+fig16 = [(TRACER_SHORT[fl.kname(k)], f'compact_dr1_indiv_{fl.kname(k)}_smin20', TRACER_COLOR[k]) for k in fl.FIT_KEYS]
+fig16 = [t for t in fig16 if t[1] in INFO]
+if 'compact_dr1_joint_smin20' not in INFO or not fig16:
+    print('need the compact DR1 joint chain and at least one individual-tracer chain')
+else:
+    fig16.append(('All', 'compact_dr1_joint_smin20', 'k'))
+    samp = {lab: chain_cosmo_dict(name) for lab, name, _ in fig16}
+    X_all = np.vstack([np.column_stack([d['h'], d['ombh2'], d['omch2'], d['ns']]) for d in samp.values()])
+    span = X_all.max(0) - X_all.min(0)
+    emulate = build_sigma8_emulator(X_all.min(0) - 0.05 * span, X_all.max(0) + 0.05 * span)
+    roots = []
+    for lab, name, col in fig16:
+        d = samp[lab]
+        s8 = emulate(np.column_stack([d['h'], d['ombh2'], d['omch2'], d['ns']])) * np.sqrt(np.exp(d['logA']) / 1e10 / A_S_REF)
+        roots.append(MCSamples(samples=np.column_stack([(d['omch2'] + d['ombh2']) / d['h'] ** 2, s8, 100 * d['h']]), names=['Omega_m', 'sigma8', 'H0'],
+                               labels=[r'\Omega_m', r'\sigma_8', 'H_0'], label=lab, settings=GETDIST_SETTINGS))
+    colors = [c for _, _, c in fig16]
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.5))
+    g = plots.get_single_plotter()
+    for ax, ypar, ylab in zip(axes, ('sigma8', 'H0'), (r'$\sigma_8$', r'$H_0\ [{\rm km\,s^{-1}Mpc^{-1}}]$')):
+        g.plot_2d(roots, 'Omega_m', ypar, ax=ax, filled=True, colors=colors, alphas=[FIG16_ALPHA] * (len(roots) - 1) + [0.9])
+        ax.set_xlim(*FIG16_LIMITS['Omega_m'])
+        ax.set_ylim(*FIG16_LIMITS[ypar])
+        ax.set_xlabel(r'$\Omega_m$', fontsize=14)
+        ax.set_ylabel(ylab, fontsize=14)
+        ax.text(0.04, 0.05, r'$\Lambda$CDM', transform=ax.transAxes, fontsize=13)
+        ax.legend(handles=[Patch(facecolor=c, edgecolor=c, alpha=0.75, label=l) for l, _, c in fig16], loc='upper right', frameon=False, fontsize=9)
+    fig.tight_layout()
+    fig.savefig(PLOT_DIR / 'dr1_tracers_Om_sigma8_H0.pdf', bbox_inches='tight')
+    fig.savefig(PLOT_DIR / 'dr1_tracers_Om_sigma8_H0.png', dpi=150, bbox_inches='tight')
+    plt.show()
+    display(pd.DataFrame({lab: {'Omega_m mean': r.mean('Omega_m'), 'Omega_m std': r.std('Omega_m'), 'sigma8 mean': r.mean('sigma8'), 'sigma8 std': r.std('sigma8'),
+                                'H0 mean': r.mean('H0'), 'H0 std': r.std('H0')} for (lab, _, _), r in zip(fig16, roots)}).T.round(3))
