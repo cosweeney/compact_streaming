@@ -94,7 +94,7 @@ def skewt_params_from_delta(delta, sig_v, nu):
 
 
 # ------------------------------------------------------------------ Pv_compact
-def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
+def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None, sigma_err=0.0):
     """Compact pairwise velocity PDF evaluated at line-of-sight velocity v,
     given perpendicular separation r_p and line-of-sight separation r_los.
 
@@ -116,6 +116,9 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
          nu_0, r_c)
     unit_conversion : float or None
         If not None, applies Mpc/h -> km/s conversion factor (a*H/h).
+    sigma_err : float
+        Extra pairwise LOS velocity dispersion [km/s] (e.g. redshift errors), added in
+        quadrature to sigma_v: sigma_v^2 -> sigma_v^2 + sigma_err^2. 0 = unchanged.
 
     Returns
     -------
@@ -147,6 +150,8 @@ def Pv_compact(v, r_p, r_los, mean_vr, pars, unit_conversion=None):
     # sigma_v: R-dependent via A_rho_mod
     A_rho = A_rho_mod(r_p, A_rho0, A_rho_p)
     sig_v = sigma_mod(x, sigma0, A_rho, sigma_rho)
+    if sigma_err:
+        sig_v = np.sqrt(sig_v**2 + sigma_err**2)
 
     # Delta offset: R-dependent via A_delta_mod, x-dependent via delta_mod_alpha
     sign_rlos = np.where(r_los != 0, np.sign(r_los), 1.0)

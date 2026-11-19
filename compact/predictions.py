@@ -36,19 +36,24 @@ _MASS_BIN_MAP = {
 
 class CompactStreamingModel:
 
-    def __init__(self, redshift, config):
+    def __init__(self, redshift, config, exact_growth=None):
         self.z = redshift
         self.cfg = config
         self._lpt = None
+        # growth rate from CAMB instead of Omega_m(z)^0.55; default taken from config (False if unset)
+        self.exact_growth = getattr(config, 'exact_growth', False) if exact_growth is None else exact_growth
 
     def _lpt_inputs(self, cosmo, bias):
         lpt_pars = np.concatenate((bias, np.zeros(7)))
-        gli = GetLPTInputs(self.z, cosmo, lpt_pars)
+        gli = GetLPTInputs(self.z, cosmo, lpt_pars, exact_growth=self.exact_growth)
+        # sigma_{v,lin} is only needed when the config's row 0 is A_sigma (sigma_0^2 = A_sigma sigma_{v,lin}^2)
+        sigma_lin = gli.sigma_v_lin() if getattr(self.cfg, 'sigma0_from_linear', False) else None
 
+        # conv must stay last: _pdf and the Gaussian generators read it as lpt[-1]
         self._lpt = (gli.xi_real(self.cfg.r_lpt, lpt_pars),
                      gli.pwv_mean(self.cfg.r_lpt, lpt_pars),
                      gli.f, gli.H,
-                     gli.D_A, gli.conv)
+                     gli.D_A, sigma_lin, gli.conv)
 
         return self._lpt
 
@@ -65,8 +70,12 @@ class CompactStreamingModel:
         if emu is None:
             raise NotImplementedError(f"z={z_node} node not yet populated in compact_emulator")
 
-        h, ombh2, omch2, As, ns = cosmo
-        cosmo_vals = np.array([ombh2, omch2, np.log(1e10 * As), ns])
+        h, ombh2, omch2, As, ns = cosmo[:5]
+        w0, wa = (cosmo[5], cosmo[6]) if len(cosmo) == 7 else (-1.0, 0.0)
+        n_cols = len(self.cfg.fiducial_cosmo)      # 4 (LCDM emulator) or 6 (adds w0, wa)
+        if n_cols == 4 and (w0, wa) != (-1.0, 0.0):
+            raise ValueError("this config's emulator has no w0, wa dependence; use compact.config_w0wa.ConfigW0wa")
+        cosmo_vals = np.array([ombh2, omch2, np.log(1e10 * As), ns, w0, wa])[:n_cols]
         delta_vals = self.cfg.fiducial_cosmo - cosmo_vals
 
         # resolve mass_bin to the right fits list
@@ -139,16 +148,20 @@ class CompactStreamingModel:
         else:
             raise ValueError(f"Unknown interp_scheme: {interp_scheme!r}")
 
-    def _pdf(self, lpt, cosmo, mass_bin=None, interp_scheme='spline_z'):
+    def _pdf(self, lpt, cosmo, mass_bin=None, interp_scheme='spline_z', sigma_err=0.0):
         """Build the line-of-sight velocity PDF function for the streaming
         model integral, using compact-model parameters evaluated at the
-        queried cosmology and mass_bin scheme."""
+        queried cosmology and mass_bin scheme. sigma_err [km/s] is an extra pairwise
+        LOS dispersion added in quadrature to sigma_v (see Pv_compact); 0 = unchanged."""
         mean = UnivariateSpline(self.cfg.r_lpt, lpt[1], s=0)
         params = self._compact_params(cosmo, mass_bin=mass_bin, interp_scheme=interp_scheme)
+        if getattr(self.cfg, 'sigma0_from_linear', False):
+            params = np.array(params, dtype=float)
+            params[0] = np.sqrt(max(params[0], 0.0)) * lpt[-2]       # row 0 is A_sigma: sigma_0 = sqrt(A_sigma) sigma_{v,lin}
         conv = lpt[-1]
 
         return lambda v, rp, rl: Pv_compact(v, rp, rl, mean, params,
-                                            unit_conversion=conv)
+                                            unit_conversion=conv, sigma_err=sigma_err)
 
     def _multipoles(self, los_pdf_function, ells=(0, 2)):
         """Compute redshift-space correlation function multipoles from
@@ -175,8 +188,8 @@ class CompactStreamingModel:
 
         Parameters
         ----------
-        theta : array-like, length 7
-            [b1, b2, omega_b, omega_cdm, h, As, ns]
+        theta : array-like, length 7 or 9
+            [b1, b2, omega_b, omega_cdm, h, As, ns] or [..., ns, w0, wa]; w0, wa default to -1, 0
         ells : tuple of int
             Multipole orders to compute (default (0, 2)).
         interp_scheme : str
@@ -194,9 +207,11 @@ class CompactStreamingModel:
         multi : ndarray, shape (len(ells), len(cfg.r))
             Predicted multipoles xi_ell(s).
         """
-        b1, b2, ombh2, omch2, h, As, ns = theta
+        b1, b2, ombh2, omch2, h, As, ns, *de = theta
+        if len(de) not in (0, 2):
+            raise ValueError(f"theta must have 7 or 9 entries, got {len(theta)}")
         bias = np.array([b1, b2])
-        cosmo = (h, ombh2, omch2, As, ns)
+        cosmo = (h, ombh2, omch2, As, ns, *de)
 
         lpt = self._lpt_inputs(cosmo, bias)
         pdf = self._pdf(lpt, cosmo, mass_bin=mass_bin, interp_scheme=interp_scheme)

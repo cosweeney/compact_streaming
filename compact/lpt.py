@@ -5,14 +5,19 @@ import numpy as np
 import camb
 from colossus.cosmology import cosmology
 from velocileptors.LPT.gaussian_streaming_model_fftw import GaussianStreamingModel
+from compact.linear import sigma_v_lin as _sigma_v_lin
 
 
 class GetLPTInputs:
 
     cosmo_fid = [0.6777, 0.02214, 0.11891, 2.2e-9, 0.9649] 
 
-    def __init__(self, redshift=1/0.8376-1, cosmo=cosmo_fid, pars=[1, 0, 0, 0, 0, 0, 0, 0, 0]):
-        h, ombh2, omch2, As, ns = cosmo
+    def __init__(self, redshift=1/0.8376-1, cosmo=cosmo_fid, pars=[1, 0, 0, 0, 0, 0, 0, 0, 0],
+                 exact_growth=False):
+        # cosmo = (h, ombh2, omch2, As, ns) or (h, ombh2, omch2, As, ns, w0, wa); w0, wa default to LCDM.
+        # exact_growth: take f = fsigma8/sigma8 from CAMB instead of the Omega_m(z)^0.55 approximation.
+        h, ombh2, omch2, As, ns = cosmo[:5]
+        w0, wa = (cosmo[5], cosmo[6]) if len(cosmo) == 7 else (-1.0, 0.0)
 
         self.h = h
         self.redshift = redshift
@@ -26,6 +31,8 @@ class GetLPTInputs:
                                     As=As, 
                                     ns=ns,                                   
                                     )
+        if (w0, wa) != (-1.0, 0.0):
+            camb_pars.set_dark_energy(w=w0, wa=wa, dark_energy_model='ppf')
 
         camb_pars.NonLinear = camb.model.NonLinear_none
         camb_pars.set_matter_power(redshifts=[redshift], kmax=2.0 * self.kmax * h)
@@ -40,10 +47,16 @@ class GetLPTInputs:
         Om0 = (ombh2 + omch2) / h**2
         Omz = Om0 * (1.0 + redshift)**3 / (self.H / (100.0 * h))**2
         self.f = Omz**0.55 # growth rate
+        if exact_growth:
+            self.f = self.results.get_fsigma8()[0] / self.results.get_sigma8()[0]
 
         self.klin = None
         self.Plin = None
         self.gsm = None
+
+    def sigma_v_lin(self):
+        # 1-D linear velocity dispersion [km/s] (CDM+baryon P(k), CAMB's f; see compact/linear.py)
+        return _sigma_v_lin(self.results, self.redshift, self.h)
 
     def get_pklin_gsm(self, kmin = 1e-4, kmax=20.0, nk=1024):
         # k in h/Mpc, P in (Mpc/h)^3, at self.redshift
