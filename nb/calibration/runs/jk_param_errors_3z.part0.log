@@ -1,0 +1,112 @@
+39 (sim, z) catalogues to process; 0 cells already done
+sim 130 z 0.2 bin 0: 2149003 halos, 64 blocks, sigma0 JK/pair = 167.1, kappa(sigma0) = 12.51  [454 s]
+sim 130 z 0.2 bin 1: 171810 halos, 64 blocks, sigma0 JK/pair = 13.2, kappa(sigma0) = 0.97  [484 s]
+  checkpoint: 1/39 catalogues, 0.13 h elapsed, ETA 5.11 h
+sim 130 z 0.8 bin 0: 1705370 halos, 64 blocks, sigma0 JK/pair = 132.3, kappa(sigma0) = 9.88  [810 s]
+sim 130 z 0.8 bin 1: 74661 halos, 64 blocks, sigma0 JK/pair = 6.3, kappa(sigma0) = 0.49  [825 s]
+  checkpoint: 2/39 catalogues, 0.23 h elapsed, ETA 4.24 h
+sim 130 z 1.7 bin 0: 762202 halos, 64 blocks, sigma0 JK/pair = 63.4, kappa(sigma0) = 5.08  [933 s]
+  checkpoint: 3/39 catalogues, 0.26 h elapsed, ETA 3.11 h
+sim 134 z 0.2 bin 0: 2357266 halos, 64 blocks, sigma0 JK/pair = 179.3, kappa(sigma0) = 13.13  [1519 s]
+sim 134 z 0.2 bin 1: 227082 halos, 64 blocks, sigma0 JK/pair = 16.5, kappa(sigma0) = 1.15  [1552 s]
+  checkpoint: 4/39 catalogues, 0.43 h elapsed, ETA 3.77 h
+sim 134 z 0.8 bin 0: 2068453 halos, 64 blocks, sigma0 JK/pair = 158.1, kappa(sigma0) = 11.64  [2085 s]
+sim 134 z 0.8 bin 1: 117397 halos, 64 blocks, sigma0 JK/pair = 10.3, kappa(sigma0) = 0.86  [2106 s]
+  checkpoint: 5/39 catalogues, 0.59 h elapsed, ETA 3.98 h
+sim 134 z 1.7 bin 0: 1152847 halos, 64 blocks, sigma0 JK/pair = 88.8, kappa(sigma0) = 6.59  [2282 s]
+  checkpoint: 6/39 catalogues, 0.63 h elapsed, ETA 3.49 h
+sim 138 z 0.2 bin 0: 2207542 halos, 64 blocks, sigma0 JK/pair = 169.4, kappa(sigma0) = 12.51  [2837 s]
+sim 138 z 0.2 bin 1: 212651 halos, 64 blocks, sigma0 JK/pair = 15.1, kappa(sigma0) = 1.03  [2885 s]
+  checkpoint: 7/39 catalogues, 0.80 h elapsed, ETA 3.66 h
+sim 138 z 0.8 bin 0: 1964083 halos, 64 blocks, sigma0 JK/pair = 156.9, kappa(sigma0) = 12.06  [3382 s]
+sim 138 z 0.8 bin 1: 123074 halos, 64 blocks, sigma0 JK/pair = 10.0, kappa(sigma0) = 0.77  [3397 s]
+  checkpoint: 8/39 catalogues, 0.94 h elapsed, ETA 3.66 h
+sim 138 z 1.7 bin 0: 1170528 halos, 64 blocks, sigma0 JK/pair = 94.7, kappa(sigma0) = 7.37  [3676 s]
+sim 138 z 1.7 bin 1: 25471 halos, 64 blocks, sigma0 JK/pair = 1.7, kappa(sigma0) = 0.15  [3683 s]
+  checkpoint: 9/39 catalogues, 1.02 h elapsed, ETA 3.41 h
+sim 142 z 0.2 bin 0: 2127766 halos, 64 blocks, sigma0 JK/pair = 164.1, kappa(sigma0) = 12.18  [4201 s]
+sim 142 z 0.2 bin 1: 167544 halos, 64 blocks, sigma0 JK/pair = 13.1, kappa(sigma0) = 0.98  [4219 s]
+  checkpoint: 10/39 catalogues, 1.17 h elapsed, ETA 3.40 h
+sim 142 z 0.8 bin 0: 1707033 halos, 64 blocks, sigma0 JK/pair = 134.4, kappa(sigma0) = 10.18  [4671 s]
+sim 142 z 0.8 bin 1: 76508 halos, 64 blocks, sigma0 JK/pair = 6.5, kappa(sigma0) = 0.52  [4684 s]
+  checkpoint: 11/39 catalogues, 1.30 h elapsed, ETA 3.31 h
+sim 142 z 1.7 bin 0: 792449 halos, 64 blocks, sigma0 JK/pair = 66.0, kappa(sigma0) = 5.28  [4779 s]
+  checkpoint: 12/39 catalogues, 1.33 h elapsed, ETA 2.99 h
+sim 146 z 0.2 bin 0: 2128139 halos, 64 blocks, sigma0 JK/pair = 163.0, kappa(sigma0) = 12.01  [5366 s]
+sim 146 z 0.2 bin 1: 187238 halos, 64 blocks, sigma0 JK/pair = 14.1, kappa(sigma0) = 1.01  [5385 s]
+  checkpoint: 13/39 catalogues, 1.50 h elapsed, ETA 2.99 h
+sim 146 z 0.8 bin 0: 1773000 halos, 64 blocks, sigma0 JK/pair = 138.1, kappa(sigma0) = 10.35  [5812 s]
+sim 146 z 0.8 bin 1: 93319 halos, 64 blocks, sigma0 JK/pair = 7.2, kappa(sigma0) = 0.53  [5832 s]
+  checkpoint: 14/39 catalogues, 1.62 h elapsed, ETA 2.89 h
+sim 146 z 1.7 bin 0: 889161 halos, 64 blocks, sigma0 JK/pair = 72.7, kappa(sigma0) = 5.71  [5955 s]
+  checkpoint: 15/39 catalogues, 1.65 h elapsed, ETA 2.65 h
+sim 150 z 0.2 bin 0: 2115984 halos, 64 blocks, sigma0 JK/pair = 159.8, kappa(sigma0) = 11.62  [6443 s]
+sim 150 z 0.2 bin 1: 232209 halos, 64 blocks, sigma0 JK/pair = 16.4, kappa(sigma0) = 1.11  [6463 s]
+  checkpoint: 16/39 catalogues, 1.80 h elapsed, ETA 2.58 h
+sim 150 z 0.8 bin 0: 2010526 halos, 64 blocks, sigma0 JK/pair = 159.2, kappa(sigma0) = 12.13  [6940 s]
+sim 150 z 0.8 bin 1: 157194 halos, 64 blocks, sigma0 JK/pair = 12.6, kappa(sigma0) = 0.96  [6960 s]
+  checkpoint: 17/39 catalogues, 1.93 h elapsed, ETA 2.50 h
+sim 150 z 1.7 bin 0: 1370090 halos, 64 blocks, sigma0 JK/pair = 110.1, kappa(sigma0) = 8.51  [7192 s]
+sim 150 z 1.7 bin 1: 45641 halos, 64 blocks, sigma0 JK/pair = 5.2, kappa(sigma0) = 0.58  [7210 s]
+  checkpoint: 18/39 catalogues, 2.00 h elapsed, ETA 2.34 h
+sim 154 z 0.2 bin 0: 2080623 halos, 64 blocks, sigma0 JK/pair = 162.1, kappa(sigma0) = 12.16  [7680 s]
+sim 154 z 0.2 bin 1: 203423 halos, 64 blocks, sigma0 JK/pair = 14.9, kappa(sigma0) = 1.04  [7704 s]
+  checkpoint: 19/39 catalogues, 2.14 h elapsed, ETA 2.25 h
+sim 154 z 0.8 bin 0: 1861201 halos, 64 blocks, sigma0 JK/pair = 149.2, kappa(sigma0) = 11.50  [8174 s]
+sim 154 z 0.8 bin 1: 122325 halos, 64 blocks, sigma0 JK/pair = 10.0, kappa(sigma0) = 0.78  [8190 s]
+  checkpoint: 20/39 catalogues, 2.28 h elapsed, ETA 2.16 h
+sim 154 z 1.7 bin 0: 1107599 halos, 64 blocks, sigma0 JK/pair = 89.8, kappa(sigma0) = 7.00  [8329 s]
+sim 154 z 1.7 bin 1: 26015 halos, 64 blocks, sigma0 JK/pair = 1.4, kappa(sigma0) = 0.06  [8340 s]
+  checkpoint: 21/39 catalogues, 2.32 h elapsed, ETA 1.99 h
+sim 158 z 0.2 bin 0: 2225345 halos, 64 blocks, sigma0 JK/pair = 168.1, kappa(sigma0) = 12.23  [9051 s]
+sim 158 z 0.2 bin 1: 217788 halos, 64 blocks, sigma0 JK/pair = 16.0, kappa(sigma0) = 1.12  [9081 s]
+  checkpoint: 22/39 catalogues, 2.52 h elapsed, ETA 1.95 h
+sim 158 z 0.8 bin 0: 1983918 halos, 64 blocks, sigma0 JK/pair = 158.3, kappa(sigma0) = 12.16  [9573 s]
+sim 158 z 0.8 bin 1: 122475 halos, 64 blocks, sigma0 JK/pair = 11.0, kappa(sigma0) = 0.95  [9594 s]
+  checkpoint: 23/39 catalogues, 2.67 h elapsed, ETA 1.85 h
+sim 158 z 1.7 bin 0: 1144847 halos, 64 blocks, sigma0 JK/pair = 91.6, kappa(sigma0) = 7.05  [9752 s]
+sim 158 z 1.7 bin 1: 22209 halos, 64 blocks, sigma0 JK/pair = 1.5, kappa(sigma0) = 0.26  [9754 s]
+  checkpoint: 24/39 catalogues, 2.71 h elapsed, ETA 1.69 h
+sim 162 z 0.2 bin 0: 1982333 halos, 64 blocks, sigma0 JK/pair = 152.4, kappa(sigma0) = 11.27  [10312 s]
+sim 162 z 0.2 bin 1: 182953 halos, 64 blocks, sigma0 JK/pair = 14.0, kappa(sigma0) = 1.02  [10340 s]
+  checkpoint: 25/39 catalogues, 2.87 h elapsed, ETA 1.61 h
+sim 162 z 0.8 bin 0: 1649258 halos, 64 blocks, sigma0 JK/pair = 130.2, kappa(sigma0) = 9.89  [10659 s]
+sim 162 z 0.8 bin 1: 93629 halos, 64 blocks, sigma0 JK/pair = 7.6, kappa(sigma0) = 0.58  [10685 s]
+  checkpoint: 26/39 catalogues, 2.97 h elapsed, ETA 1.48 h
+sim 162 z 1.7 bin 0: 825593 halos, 64 blocks, sigma0 JK/pair = 67.3, kappa(sigma0) = 5.28  [10829 s]
+  checkpoint: 27/39 catalogues, 3.01 h elapsed, ETA 1.34 h
+sim 166 z 0.2 bin 0: 2388701 halos, 64 blocks, sigma0 JK/pair = 184.5, kappa(sigma0) = 13.72  [11530 s]
+sim 166 z 0.2 bin 1: 229803 halos, 64 blocks, sigma0 JK/pair = 16.9, kappa(sigma0) = 1.18  [11564 s]
+  checkpoint: 28/39 catalogues, 3.21 h elapsed, ETA 1.26 h
+sim 166 z 0.8 bin 0: 2172996 halos, 64 blocks, sigma0 JK/pair = 168.7, kappa(sigma0) = 12.60  [12091 s]
+sim 166 z 0.8 bin 1: 136385 halos, 64 blocks, sigma0 JK/pair = 11.0, kappa(sigma0) = 0.84  [12117 s]
+  checkpoint: 29/39 catalogues, 3.37 h elapsed, ETA 1.16 h
+sim 166 z 1.7 bin 0: 1365434 halos, 64 blocks, sigma0 JK/pair = 106.7, kappa(sigma0) = 8.01  [12343 s]
+sim 166 z 1.7 bin 1: 30241 halos, 64 blocks, sigma0 JK/pair = 1.9, kappa(sigma0) = 0.12  [12353 s]
+  checkpoint: 30/39 catalogues, 3.43 h elapsed, ETA 1.03 h
+sim 170 z 0.2 bin 0: 1947743 halos, 64 blocks, sigma0 JK/pair = 150.8, kappa(sigma0) = 11.23  [12836 s]
+sim 170 z 0.2 bin 1: 160459 halos, 64 blocks, sigma0 JK/pair = 12.6, kappa(sigma0) = 0.94  [12855 s]
+  checkpoint: 31/39 catalogues, 3.57 h elapsed, ETA 0.92 h
+sim 170 z 0.8 bin 0: 1507910 halos, 64 blocks, sigma0 JK/pair = 117.6, kappa(sigma0) = 8.82  [13194 s]
+sim 170 z 0.8 bin 1: 69004 halos, 64 blocks, sigma0 JK/pair = 5.9, kappa(sigma0) = 0.47  [13220 s]
+  checkpoint: 32/39 catalogues, 3.67 h elapsed, ETA 0.80 h
+sim 170 z 1.7 bin 0: 631751 halos, 64 blocks, sigma0 JK/pair = 53.7, kappa(sigma0) = 4.38  [13352 s]
+  checkpoint: 33/39 catalogues, 3.71 h elapsed, ETA 0.67 h
+sim 174 z 0.2 bin 0: 2054213 halos, 64 blocks, sigma0 JK/pair = 155.8, kappa(sigma0) = 11.38  [13806 s]
+sim 174 z 0.2 bin 1: 206959 halos, 64 blocks, sigma0 JK/pair = 14.9, kappa(sigma0) = 1.03  [13833 s]
+  checkpoint: 34/39 catalogues, 3.84 h elapsed, ETA 0.57 h
+sim 174 z 0.8 bin 0: 1811611 halos, 64 blocks, sigma0 JK/pair = 140.4, kappa(sigma0) = 10.47  [14252 s]
+sim 174 z 0.8 bin 1: 119505 halos, 64 blocks, sigma0 JK/pair = 10.1, kappa(sigma0) = 0.81  [14278 s]
+  checkpoint: 35/39 catalogues, 3.97 h elapsed, ETA 0.45 h
+sim 174 z 1.7 bin 0: 1047295 halos, 64 blocks, sigma0 JK/pair = 84.0, kappa(sigma0) = 6.48  [14431 s]
+sim 174 z 1.7 bin 1: 24428 halos, 64 blocks, sigma0 JK/pair = 1.5, kappa(sigma0) = 0.11  [14436 s]
+  checkpoint: 36/39 catalogues, 4.01 h elapsed, ETA 0.33 h
+sim 178 z 0.2 bin 0: 2369039 halos, 64 blocks, sigma0 JK/pair = 181.7, kappa(sigma0) = 13.41  [15181 s]
+sim 178 z 0.2 bin 1: 214035 halos, 64 blocks, sigma0 JK/pair = 16.0, kappa(sigma0) = 1.15  [15211 s]
+  checkpoint: 37/39 catalogues, 4.23 h elapsed, ETA 0.23 h
+sim 178 z 0.8 bin 0: 2058315 halos, 64 blocks, sigma0 JK/pair = 160.4, kappa(sigma0) = 12.03  [15724 s]
+sim 178 z 0.8 bin 1: 112532 halos, 64 blocks, sigma0 JK/pair = 9.0, kappa(sigma0) = 0.68  [15739 s]
+  checkpoint: 38/39 catalogues, 4.37 h elapsed, ETA 0.12 h
+sim 178 z 1.7 bin 0: 1146131 halos, 64 blocks, sigma0 JK/pair = 90.5, kappa(sigma0) = 6.87  [15948 s]
+  checkpoint: 39/39 catalogues, 4.43 h elapsed, ETA 0.00 h
+wrote jk_param_errors_3z.part0.h5
